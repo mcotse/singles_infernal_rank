@@ -123,19 +123,24 @@ export const RankList = ({
 
   // Keep local state in sync with props when cards change (edit, add, delete)
   useEffect(() => {
-    // Compare by checking if any card content changed
-    const cardsChanged = cards.length !== orderedCards.length ||
-      cards.some((card) => {
-        const orderedCard = orderedCards.find(c => c.id === card.id)
-        if (!orderedCard) return true
-        return card.name !== orderedCard.name ||
-               card.notes !== orderedCard.notes ||
-               card.updatedAt !== orderedCard.updatedAt
-      })
+    // Create a map of new card data by ID for efficient lookup
+    const cardMap = new Map(cards.map(c => [c.id, c]))
 
-    if (cardsChanged) {
-      setOrderedCards(cards)
-    }
+    setOrderedCards(prev => {
+      // If card count changed (add/delete), use new cards array
+      if (prev.length !== cards.length) {
+        return cards
+      }
+
+      // Check if all IDs still exist
+      const allIdsExist = prev.every(c => cardMap.has(c.id))
+      if (!allIdsExist) {
+        return cards
+      }
+
+      // Update card data while preserving drag order
+      return prev.map(orderedCard => cardMap.get(orderedCard.id) || orderedCard)
+    })
   }, [cards])
 
   const handleReorder = useCallback((newOrder: Card[]) => {
