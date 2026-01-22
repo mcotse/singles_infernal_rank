@@ -124,6 +124,59 @@ describe('BoardDetailPage', () => {
 
       expect(screen.getByRole('button', { name: /add/i })).toBeInTheDocument()
     })
+
+    it('opens add card modal when FAB clicked', () => {
+      render(<BoardDetailPage boardId="board-1" onBack={vi.fn()} />)
+
+      fireEvent.click(screen.getByRole('button', { name: /add new card/i }))
+
+      // Modal should open with empty name input
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+      expect(screen.getByLabelText(/name/i)).toHaveValue('')
+    })
+
+    it('creates card when add modal is saved', () => {
+      const createCard = vi.fn()
+      mockUseCards.mockReturnValue({
+        ...defaultCardsHook,
+        createCard,
+      })
+
+      render(<BoardDetailPage boardId="board-1" onBack={vi.fn()} />)
+
+      // Open add modal (FAB has name "Add new card")
+      fireEvent.click(screen.getByRole('button', { name: /add new card/i }))
+
+      // Fill in name
+      const nameInput = screen.getByLabelText(/name/i)
+      fireEvent.change(nameInput, { target: { value: 'New Card' } })
+
+      // Save (button in add mode says "Add Card")
+      fireEvent.click(screen.getByRole('button', { name: 'Add Card' }))
+
+      expect(createCard).toHaveBeenCalledWith(expect.objectContaining({
+        name: 'New Card',
+      }))
+    })
+
+    it('closes add modal without creating card when cancelled', () => {
+      const createCard = vi.fn()
+      mockUseCards.mockReturnValue({
+        ...defaultCardsHook,
+        createCard,
+      })
+
+      render(<BoardDetailPage boardId="board-1" onBack={vi.fn()} />)
+
+      // Open add modal
+      fireEvent.click(screen.getByRole('button', { name: /add new card/i }))
+
+      // Click backdrop to close
+      fireEvent.click(screen.getByTestId('backdrop'))
+
+      expect(createCard).not.toHaveBeenCalled()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
   })
 
   describe('reordering', () => {
@@ -152,6 +205,95 @@ describe('BoardDetailPage', () => {
       render(<BoardDetailPage boardId="non-existent" onBack={vi.fn()} />)
 
       expect(screen.getByText(/not found/i)).toBeInTheDocument()
+    })
+  })
+
+  describe('card detail modal', () => {
+    it('opens modal when card is tapped', () => {
+      mockUseCards.mockReturnValue({
+        ...defaultCardsHook,
+        getCard: vi.fn((id) => mockCards.find((c) => c.id === id)),
+      })
+
+      render(<BoardDetailPage boardId="board-1" onBack={vi.fn()} />)
+
+      // Click on the first card's tappable body area
+      const firstCardBody = screen.getByText('First Card').closest('[data-testid="card-body"]')
+      fireEvent.click(firstCardBody!)
+
+      // Modal should open with the card's name in edit input
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+      expect(screen.getByDisplayValue('First Card')).toBeInTheDocument()
+    })
+
+    it('saves card changes when save clicked', async () => {
+      const updateCard = vi.fn()
+      mockUseCards.mockReturnValue({
+        ...defaultCardsHook,
+        updateCard,
+        getCard: vi.fn((id) => mockCards.find((c) => c.id === id)),
+      })
+
+      render(<BoardDetailPage boardId="board-1" onBack={vi.fn()} />)
+
+      // Open modal
+      const firstCardBody = screen.getByText('First Card').closest('[data-testid="card-body"]')
+      fireEvent.click(firstCardBody!)
+
+      // Change the name
+      const nameInput = screen.getByLabelText(/name/i)
+      fireEvent.change(nameInput, { target: { value: 'Updated Card' } })
+
+      // Save
+      fireEvent.click(screen.getByRole('button', { name: /save/i }))
+
+      expect(updateCard).toHaveBeenCalledWith('card-1', expect.objectContaining({
+        name: 'Updated Card',
+      }))
+    })
+
+    it('deletes card when delete confirmed', () => {
+      const deleteCard = vi.fn()
+      mockUseCards.mockReturnValue({
+        ...defaultCardsHook,
+        deleteCard,
+        getCard: vi.fn((id) => mockCards.find((c) => c.id === id)),
+      })
+
+      render(<BoardDetailPage boardId="board-1" onBack={vi.fn()} />)
+
+      // Open modal
+      const firstCardBody = screen.getByText('First Card').closest('[data-testid="card-body"]')
+      fireEvent.click(firstCardBody!)
+
+      // Click delete
+      fireEvent.click(screen.getByRole('button', { name: /delete/i }))
+
+      // Confirm delete
+      fireEvent.click(screen.getByRole('button', { name: /yes/i }))
+
+      expect(deleteCard).toHaveBeenCalledWith('card-1')
+    })
+
+    it('closes modal when backdrop clicked', () => {
+      mockUseCards.mockReturnValue({
+        ...defaultCardsHook,
+        getCard: vi.fn((id) => mockCards.find((c) => c.id === id)),
+      })
+
+      render(<BoardDetailPage boardId="board-1" onBack={vi.fn()} />)
+
+      // Open modal
+      const firstCardBody = screen.getByText('First Card').closest('[data-testid="card-body"]')
+      fireEvent.click(firstCardBody!)
+
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+      // Click backdrop
+      fireEvent.click(screen.getByTestId('backdrop'))
+
+      // Modal should close
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
   })
 })

@@ -1,8 +1,14 @@
+import { useState, useCallback } from 'react'
 import { useBoards } from '../hooks/useBoards'
 import { useCards } from '../hooks/useCards'
+import { useImageStorage } from '../hooks/useImageStorage'
 import { RankList } from '../components/RankList'
+import { CardDetailModal } from '../components/CardDetailModal'
+import { PhotoPicker } from '../components/PhotoPicker'
 import { Button } from '../components/ui/Button'
 import { wobbly } from '../styles/wobbly'
+import { compressImage, createThumbnail } from '../lib/imageUtils'
+import type { Card } from '../lib/types'
 
 interface BoardDetailPageProps {
   /** ID of the board to display */
@@ -109,9 +115,30 @@ export const BoardDetailPage = ({
   onAddCard,
 }: BoardDetailPageProps) => {
   const { getBoard } = useBoards()
-  const { cards, reorderCards } = useCards(boardId)
+  const { cards, reorderCards, updateCard, deleteCard, getCard, createCard } = useCards(boardId)
+  const { storeImage, getImageUrl } = useImageStorage()
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
+  const [isAddingCard, setIsAddingCard] = useState(false)
+  const [photoPickerTrigger, setPhotoPickerTrigger] = useState<(() => void) | null>(null)
+  const [pendingPhotoCardId, setPendingPhotoCardId] = useState<string | null>(null)
 
   const board = getBoard(boardId)
+  const selectedCard = selectedCardId ? getCard(selectedCardId) : null
+
+  // Template for new cards
+  const newCardTemplate: Card = {
+    id: 'new-card-temp',
+    boardId,
+    name: '',
+    imageKey: null,
+    thumbnailKey: null,
+    imageCrop: null,
+    notes: '',
+    metadata: {},
+    rank: cards.length + 1,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  }
 
   if (!board) {
     return <BoardNotFound onBack={onBack} />
@@ -122,15 +149,88 @@ export const BoardDetailPage = ({
   }
 
   const handleCardTap = (cardId: string) => {
+    setSelectedCardId(cardId)
     onCardTap?.(cardId)
   }
 
   const handleAddCard = () => {
+    setIsAddingCard(true)
     onAddCard?.()
   }
 
-  // TODO: Get thumbnail URLs from useImageStorage
+  const handleCloseModal = () => {
+    setSelectedCardId(null)
+    setIsAddingCard(false)
+  }
+
+  const handleSaveCard = (updates: Partial<Card>) => {
+    if (isAddingCard) {
+      // Create new card
+      createCard({
+        name: updates.name || 'Unnamed',
+        notes: updates.notes || '',
+      })
+      setIsAddingCard(false)
+    } else if (selectedCardId) {
+      // Update existing card
+      updateCard(selectedCardId, updates)
+    }
+  }
+
+  const handleDeleteCard = (cardId: string) => {
+    deleteCard(cardId)
+    setSelectedCardId(null)
+  }
+
+  // Handle photo change request from modal
+  const handleChangePhoto = useCallback((cardId: string) => {
+    setPendingPhotoCardId(cardId)
+    photoPickerTrigger?.()
+  }, [photoPickerTrigger])
+
+  // Handle photo selection from picker
+  const handlePhotoSelect = useCallback(async (file: File) => {
+    if (!pendingPhotoCardId) return
+
+    try {
+      // Compress the image
+      const compressedBlob = await compressImage(file)
+
+      // Create thumbnail
+      const thumbnailBlob = await createThumbnail(compressedBlob)
+
+      // Store both images
+      const imageKey = `card-${pendingPhotoCardId}-image`
+      const thumbnailKey = `card-${pendingPhotoCardId}-thumb`
+
+      await storeImage(imageKey, compressedBlob)
+      await storeImage(thumbnailKey, thumbnailBlob)
+
+      // Update the card with image keys
+      if (pendingPhotoCardId !== 'new-card-temp') {
+        updateCard(pendingPhotoCardId, {
+          imageKey,
+          thumbnailKey,
+        })
+      }
+
+      setPendingPhotoCardId(null)
+    } catch (error) {
+      console.error('Failed to process photo:', error)
+      setPendingPhotoCardId(null)
+    }
+  }, [pendingPhotoCardId, storeImage, updateCard])
+
+  // Build thumbnail URLs for cards with images
   const thumbnailUrls: Record<string, string> = {}
+  for (const card of cards) {
+    if (card.thumbnailKey) {
+      const url = getImageUrl(card.thumbnailKey)
+      if (url) {
+        thumbnailUrls[card.id] = url
+      }
+    }
+  }
 
   return (
     <div className="min-h-full pb-20">
@@ -158,6 +258,38 @@ export const BoardDetailPage = ({
 
       {/* Add Card FAB */}
       <AddCardFAB onClick={handleAddCard} />
+
+      {/* Card Detail Modal - Edit Mode */}
+      {selectedCard && (
+        <CardDetailModal
+          isOpen={!!selectedCardId}
+          card={selectedCard}
+          imageUrl={selectedCard.thumbnailKey ? thumbnailUrls[selectedCard.id] : null}
+          onClose={handleCloseModal}
+          onSave={handleSaveCard}
+          onDelete={handleDeleteCard}
+          onChangePhoto={() => handleChangePhoto(selectedCard.id)}
+        />
+      )}
+
+      {/* Card Detail Modal - Add Mode */}
+      {isAddingCard && (
+        <CardDetailModal
+          isOpen={isAddingCard}
+          card={newCardTemplate}
+          isNewCard
+          onClose={handleCloseModal}
+          onSave={handleSaveCard}
+          onDelete={() => {}} // Not used in add mode
+          onChangePhoto={() => handleChangePhoto('new-card-temp')}
+        />
+      )}
+
+      {/* Photo Picker (hidden file input) */}
+      <PhotoPicker
+        onPhotoSelect={handlePhotoSelect}
+        onTriggerReady={setPhotoPickerTrigger}
+      />
     </div>
   )
 }
