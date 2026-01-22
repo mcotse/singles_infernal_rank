@@ -2,23 +2,12 @@ import { useState } from 'react'
 import { TabBar, type Tab } from './components/ui/TabBar'
 import { BoardsPage } from './pages/BoardsPage'
 import { BoardDetailPage } from './pages/BoardDetailPage'
+import { SettingsPage } from './pages/SettingsPage'
 
 const tabs: Tab[] = [
   { id: 'boards', label: 'Boards', icon: '📋' },
   { id: 'settings', label: 'Settings', icon: '⚙️' },
 ]
-
-/**
- * Placeholder Settings page
- */
-const SettingsPage = () => (
-  <div className="p-6">
-    <h1 className="font-['Kalam'] text-4xl text-[#2d2d2d] mb-4">Settings</h1>
-    <p className="font-['Patrick_Hand'] text-lg text-[#2d2d2d]/70">
-      App settings and preferences
-    </p>
-  </div>
-)
 
 /**
  * Main App shell with TabBar navigation
