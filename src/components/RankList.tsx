@@ -173,6 +173,8 @@ const DraggableCard = ({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
+        onContextMenu={(e) => e.preventDefault()}
+        className="select-none"
         style={{ touchAction: 'pan-y' }}
       >
         <RankCard
