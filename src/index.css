@@ -1,68 +1,76 @@
+/* Google Fonts - must come before tailwindcss */
+@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Patrick+Hand&display=swap');
+
+@import "tailwindcss";
+
+/* Design System CSS Variables */
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  /* Colors */
+  --color-background: #fdfbf7;
+  --color-foreground: #2d2d2d;
+  --color-muted: #e5e0d8;
+  --color-accent: #ff4d4d;
+  --color-secondary: #2d5da1;
+  --color-border: #2d2d2d;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  /* Typography */
+  --font-heading: 'Kalam', cursive;
+  --font-body: 'Patrick Hand', cursive;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+  /* Shadows (hard offset, no blur) */
+  --shadow-sm: 2px 2px 0px 0px var(--color-border);
+  --shadow-md: 4px 4px 0px 0px var(--color-border);
+  --shadow-lg: 8px 8px 0px 0px var(--color-border);
+
+  /* iOS Safe Areas */
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  --safe-area-inset-right: env(safe-area-inset-right, 0px);
+}
+
+/* Base styles */
+html {
+  font-family: var(--font-body);
+  color: var(--color-foreground);
+  background-color: var(--color-background);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+  /* Prevent pull-to-refresh on iOS */
+  overscroll-behavior: none;
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
   min-height: 100vh;
+  min-height: 100dvh;
+  /* Paper texture background */
+  background-image: radial-gradient(var(--color-muted) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-color: var(--color-background);
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* Headings use Kalam font */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+/* Prevent iOS text size adjustment */
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+/* Touch action for better drag behavior */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Safe area padding utilities */
+.safe-top {
+  padding-top: var(--safe-area-inset-top);
+}
+
+.safe-bottom {
+  padding-bottom: var(--safe-area-inset-bottom);
 }
