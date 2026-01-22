@@ -116,7 +116,7 @@ export const BoardDetailPage = ({
 }: BoardDetailPageProps) => {
   const { getBoard } = useBoards()
   const { cards, reorderCards, updateCard, deleteCard, getCard, createCard } = useCards(boardId)
-  const { saveImage, getImageUrl } = useImageStorage()
+  const { saveImage, getThumbnailUrl } = useImageStorage()
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [isAddingCard, setIsAddingCard] = useState(false)
   const [photoPickerTrigger, setPhotoPickerTrigger] = useState<(() => void) | null>(null)
@@ -222,20 +222,30 @@ export const BoardDetailPage = ({
 
   // Load thumbnail URLs for cards with images
   useEffect(() => {
+    let cancelled = false
+
     const loadThumbnails = async () => {
       const urls: Record<string, string> = {}
       for (const card of cards) {
+        if (cancelled) return
         if (card.thumbnailKey) {
-          const url = await getImageUrl(card.thumbnailKey)
+          // Use getThumbnailUrl to get the optimized thumbnail blob
+          const url = await getThumbnailUrl(card.thumbnailKey)
           if (url) {
             urls[card.id] = url
           }
         }
       }
-      setThumbnailUrls(urls)
+      if (!cancelled) {
+        setThumbnailUrls(urls)
+      }
     }
     loadThumbnails()
-  }, [cards, getImageUrl])
+
+    return () => {
+      cancelled = true
+    }
+  }, [cards, getThumbnailUrl])
 
   return (
     <div className="min-h-full pb-20">
@@ -291,9 +301,11 @@ export const BoardDetailPage = ({
       )}
 
       {/* Photo Picker (hidden file input) */}
+      {/* Note: We wrap the trigger in an arrow function to prevent React from
+          interpreting it as a functional state updater and calling it immediately */}
       <PhotoPicker
         onPhotoSelect={handlePhotoSelect}
-        onTriggerReady={setPhotoPickerTrigger}
+        onTriggerReady={(trigger) => setPhotoPickerTrigger(() => trigger)}
       />
     </div>
   )

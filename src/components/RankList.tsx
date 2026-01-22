@@ -125,7 +125,7 @@ export const RankList = ({
   useEffect(() => {
     // Compare by checking if any card content changed
     const cardsChanged = cards.length !== orderedCards.length ||
-      cards.some((card, i) => {
+      cards.some((card) => {
         const orderedCard = orderedCards.find(c => c.id === card.id)
         if (!orderedCard) return true
         return card.name !== orderedCard.name ||
