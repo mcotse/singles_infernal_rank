@@ -3,13 +3,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { BoardDetailPage } from './BoardDetailPage'
 import * as useBoardsModule from '../hooks/useBoards'
 import * as useCardsModule from '../hooks/useCards'
+import * as useImageStorageModule from '../hooks/useImageStorage'
 
 // Mock the hooks
 vi.mock('../hooks/useBoards')
 vi.mock('../hooks/useCards')
+vi.mock('../hooks/useImageStorage')
 
 const mockUseBoards = vi.mocked(useBoardsModule.useBoards)
 const mockUseCards = vi.mocked(useCardsModule.useCards)
+const mockUseImageStorage = vi.mocked(useImageStorageModule.useImageStorage)
 
 describe('BoardDetailPage', () => {
   const mockBoard = {
@@ -72,10 +75,21 @@ describe('BoardDetailPage', () => {
     refresh: vi.fn(),
   }
 
+  const defaultImageStorageHook = {
+    isProcessing: false,
+    saveImage: vi.fn().mockResolvedValue('test-image-key'),
+    getImage: vi.fn().mockResolvedValue(null),
+    getImageUrl: vi.fn().mockResolvedValue(null),
+    getThumbnailUrl: vi.fn().mockResolvedValue(null),
+    deleteImage: vi.fn().mockResolvedValue(undefined),
+    revokeUrl: vi.fn(),
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockUseBoards.mockReturnValue(defaultBoardsHook)
     mockUseCards.mockReturnValue(defaultCardsHook)
+    mockUseImageStorage.mockReturnValue(defaultImageStorageHook)
   })
 
   describe('header', () => {
