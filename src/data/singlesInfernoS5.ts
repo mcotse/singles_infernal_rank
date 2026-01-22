@@ -195,10 +195,10 @@ export const loadSinglesInfernoS5 = async (
 
   const totalSteps = castMembers.length + 2 // +2 for two board posters
 
-  // Check if boards already exist
+  // Check if boards already exist - only skip if BOTH already exist
   const existingWomenBoard = getBoard(WOMEN_BOARD_ID)
   const existingMenBoard = getBoard(MEN_BOARD_ID)
-  if (existingWomenBoard || existingMenBoard) {
+  if (existingWomenBoard && existingMenBoard) {
     return {
       success: true,
       boardCreated: false,
