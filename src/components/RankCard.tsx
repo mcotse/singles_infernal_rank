@@ -116,10 +116,10 @@ const CardPhoto = ({ url, alt }: { url: string; alt: string }) => (
  * RankCard Component
  *
  * A draggable card for ranked items showing:
- * - Drag handle (left)
+ * - Rank badge (left)
  * - Photo thumbnail
  * - Name and notes
- * - Rank badge (right)
+ * - Drag handle (right)
  *
  * Design notes:
  * - Hand-drawn aesthetic with wobbly borders
@@ -166,8 +166,8 @@ export const RankCard = ({
       <RankDecoration rank={rank} />
 
       <div className="flex items-center gap-2 p-2">
-        {/* Drag Handle */}
-        <DragHandle isDragging={isDragging} />
+        {/* Rank Badge */}
+        <RankBadge rank={rank} />
 
         {/* Card Body - tappable area */}
         <div
@@ -210,8 +210,8 @@ export const RankCard = ({
           </div>
         </div>
 
-        {/* Rank Badge */}
-        <RankBadge rank={rank} />
+        {/* Drag Handle */}
+        <DragHandle isDragging={isDragging} />
       </div>
     </div>
   )
