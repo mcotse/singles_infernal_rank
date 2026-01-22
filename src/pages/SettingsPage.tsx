@@ -4,7 +4,7 @@ import { Button } from '../components/ui/Button'
 import { wobbly } from '../styles/wobbly'
 import { springConfig } from '../styles/tokens'
 import { importData, exportData, clearAllData } from '../lib/storage'
-import { getSinglesInfernoS5Json } from '../data/singlesInfernoS5'
+import { loadSinglesInfernoS5 } from '../data/singlesInfernoS5'
 import { clearAllImages } from '../lib/db'
 
 type FeedbackType = 'success' | 'error' | 'warning' | null
@@ -198,6 +198,7 @@ export const SettingsPage = () => {
   const [feedback, setFeedback] = useState<Feedback | null>(null)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [loadProgress, setLoadProgress] = useState<string>('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const showFeedback = (type: FeedbackType, message: string) => {
@@ -205,25 +206,34 @@ export const SettingsPage = () => {
     setTimeout(() => setFeedback(null), 4000)
   }
 
-  // Load Singles Inferno S5 seed data
-  const handleLoadSeedData = () => {
+  // Load Singles Inferno S5 seed data with images
+  const handleLoadSeedData = async () => {
     setIsLoading(true)
-    try {
-      const seedJson = getSinglesInfernoS5Json()
-      const result = importData(seedJson, { merge: true })
+    setLoadProgress('Starting...')
 
-      if (result.success) {
+    try {
+      const result = await loadSinglesInfernoS5((current, total, name) => {
+        setLoadProgress(`${name} (${current}/${total})`)
+      })
+
+      if (result.success && result.boardCreated) {
+        const errorNote = result.errors.length > 0
+          ? ` (${result.errors.length} images failed to load)`
+          : ''
         showFeedback(
           'success',
-          `Loaded Singles Inferno S5! Added ${result.boardsImported} board and ${result.cardsImported} cast members.`
+          `Loaded Singles Inferno S5! Added ${result.cardsCreated} cast members with ${result.imagesLoaded} photos.${errorNote}`
         )
+      } else if (result.errors.includes('Singles Inferno S5 board already exists')) {
+        showFeedback('warning', 'Singles Inferno S5 board already exists!')
       } else {
-        showFeedback('error', result.error || 'Failed to load seed data')
+        showFeedback('error', result.errors.join(', ') || 'Failed to load seed data')
       }
     } catch (error) {
       showFeedback('error', 'Something went wrong loading the seed data')
     } finally {
       setIsLoading(false)
+      setLoadProgress('')
     }
   }
 
@@ -348,7 +358,7 @@ export const SettingsPage = () => {
               size="sm"
               disabled={isLoading}
             >
-              {isLoading ? 'Loading...' : 'Load Cast'}
+              {isLoading ? loadProgress || 'Loading...' : 'Load Cast & Photos'}
             </Button>
           </div>
         </SettingsSection>
