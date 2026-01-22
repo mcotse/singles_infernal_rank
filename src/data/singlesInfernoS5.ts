@@ -126,13 +126,32 @@ const castMembers: CastMember[] = [
 
 /**
  * Fetch an image from URL and return as Blob
+ * Uses a CORS proxy to bypass cross-origin restrictions
  */
 const fetchImageAsBlob = async (url: string): Promise<Blob> => {
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch image: ${response.status}`)
+  // Try multiple CORS proxies in case one fails
+  const corsProxies = [
+    (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+    (u: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  ]
+
+  let lastError: Error | null = null
+
+  for (const proxyFn of corsProxies) {
+    try {
+      const proxyUrl = proxyFn(url)
+      const response = await fetch(proxyUrl)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.status}`)
+      }
+      return response.blob()
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Unknown error')
+      // Try next proxy
+    }
   }
-  return response.blob()
+
+  throw lastError || new Error('All CORS proxies failed')
 }
 
 /**
