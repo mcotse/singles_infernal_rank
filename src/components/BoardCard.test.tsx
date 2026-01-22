@@ -76,7 +76,6 @@ describe('BoardCard', () => {
       // Each photo after the first should have a negative margin or transform
       photos.forEach((photo, index) => {
         if (index > 0) {
-          const style = window.getComputedStyle(photo)
           // Photos overlap via positioning
           expect(photo.className).toContain('absolute')
         }

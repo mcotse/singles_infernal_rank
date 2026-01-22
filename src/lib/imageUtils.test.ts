@@ -161,7 +161,8 @@ describe('Image Utilities', () => {
 
     it('rejects when canvas context is unavailable', async () => {
       mockImageLoad(800, 600)
-      mockCanvas.getContext = vi.fn(() => null)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      mockCanvas.getContext = vi.fn(() => null) as any
       const sourceBlob = new Blob(['test'], { type: 'image/jpeg' })
 
       await expect(compressImage(sourceBlob)).rejects.toThrow('Failed to get canvas context')

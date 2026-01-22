@@ -50,13 +50,7 @@ describe('DragHandle', () => {
       render(<DragHandle />)
       const lines = screen.getAllByTestId('drag-line')
 
-      // Lines should have slightly different widths
-      const widths = lines.map(line => {
-        const style = window.getComputedStyle(line)
-        return style.width
-      })
-
-      // At least check they're all different via classes
+      // At least check they're all different via classes or have variation
       const hasVariation = lines.some((line, i) =>
         lines.some((other, j) => i !== j && line.className !== other.className)
       )

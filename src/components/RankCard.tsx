@@ -1,6 +1,6 @@
 import { type MouseEvent } from 'react'
 import { wobbly } from '../styles/wobbly'
-import { shadows, colors } from '../styles/tokens'
+import { colors } from '../styles/tokens'
 import { DragHandle } from './DragHandle'
 
 export interface RankCardProps {

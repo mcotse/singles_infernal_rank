@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useBoards } from '../hooks/useBoards'
 import { useCards } from '../hooks/useCards'
 import { useImageStorage } from '../hooks/useImageStorage'
@@ -7,7 +7,7 @@ import { CardDetailModal } from '../components/CardDetailModal'
 import { PhotoPicker } from '../components/PhotoPicker'
 import { Button } from '../components/ui/Button'
 import { wobbly } from '../styles/wobbly'
-import { compressImage, createThumbnail } from '../lib/imageUtils'
+import { compressImage, generateThumbnail } from '../lib/imageUtils'
 import type { Card } from '../lib/types'
 
 interface BoardDetailPageProps {
@@ -116,11 +116,12 @@ export const BoardDetailPage = ({
 }: BoardDetailPageProps) => {
   const { getBoard } = useBoards()
   const { cards, reorderCards, updateCard, deleteCard, getCard, createCard } = useCards(boardId)
-  const { storeImage, getImageUrl } = useImageStorage()
+  const { saveImage, getImageUrl } = useImageStorage()
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [isAddingCard, setIsAddingCard] = useState(false)
   const [photoPickerTrigger, setPhotoPickerTrigger] = useState<(() => void) | null>(null)
   const [pendingPhotoCardId, setPendingPhotoCardId] = useState<string | null>(null)
+  const [thumbnailUrls, setThumbnailUrls] = useState<Record<string, string>>({})
 
   const board = getBoard(boardId)
   const selectedCard = selectedCardId ? getCard(selectedCardId) : null
@@ -166,10 +167,11 @@ export const BoardDetailPage = ({
   const handleSaveCard = (updates: Partial<Card>) => {
     if (isAddingCard) {
       // Create new card
-      createCard({
-        name: updates.name || 'Unnamed',
-        notes: updates.notes || '',
-      })
+      const newCard = createCard(updates.name || 'Unnamed')
+      // Update notes if provided
+      if (updates.notes) {
+        updateCard(newCard.id, { notes: updates.notes })
+      }
       setIsAddingCard(false)
     } else if (selectedCardId) {
       // Update existing card
@@ -197,14 +199,11 @@ export const BoardDetailPage = ({
       const compressedBlob = await compressImage(file)
 
       // Create thumbnail
-      const thumbnailBlob = await createThumbnail(compressedBlob)
+      const thumbnailBlob = await generateThumbnail(compressedBlob)
 
       // Store both images
-      const imageKey = `card-${pendingPhotoCardId}-image`
-      const thumbnailKey = `card-${pendingPhotoCardId}-thumb`
-
-      await storeImage(imageKey, compressedBlob)
-      await storeImage(thumbnailKey, thumbnailBlob)
+      const imageKey = await saveImage(compressedBlob)
+      const thumbnailKey = await saveImage(thumbnailBlob)
 
       // Update the card with image keys
       if (pendingPhotoCardId !== 'new-card-temp') {
@@ -219,18 +218,24 @@ export const BoardDetailPage = ({
       console.error('Failed to process photo:', error)
       setPendingPhotoCardId(null)
     }
-  }, [pendingPhotoCardId, storeImage, updateCard])
+  }, [pendingPhotoCardId, saveImage, updateCard])
 
-  // Build thumbnail URLs for cards with images
-  const thumbnailUrls: Record<string, string> = {}
-  for (const card of cards) {
-    if (card.thumbnailKey) {
-      const url = getImageUrl(card.thumbnailKey)
-      if (url) {
-        thumbnailUrls[card.id] = url
+  // Load thumbnail URLs for cards with images
+  useEffect(() => {
+    const loadThumbnails = async () => {
+      const urls: Record<string, string> = {}
+      for (const card of cards) {
+        if (card.thumbnailKey) {
+          const url = await getImageUrl(card.thumbnailKey)
+          if (url) {
+            urls[card.id] = url
+          }
+        }
       }
+      setThumbnailUrls(urls)
     }
-  }
+    loadThumbnails()
+  }, [cards, getImageUrl])
 
   return (
     <div className="min-h-full pb-20">

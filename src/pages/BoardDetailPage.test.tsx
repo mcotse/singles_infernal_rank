@@ -136,7 +136,7 @@ describe('BoardDetailPage', () => {
     })
 
     it('creates card when add modal is saved', () => {
-      const createCard = vi.fn()
+      const createCard = vi.fn().mockReturnValue({ id: 'new-card-id' })
       mockUseCards.mockReturnValue({
         ...defaultCardsHook,
         createCard,
@@ -154,9 +154,8 @@ describe('BoardDetailPage', () => {
       // Save (button in add mode says "Add Card")
       fireEvent.click(screen.getByRole('button', { name: 'Add Card' }))
 
-      expect(createCard).toHaveBeenCalledWith(expect.objectContaining({
-        name: 'New Card',
-      }))
+      // createCard takes just the name string
+      expect(createCard).toHaveBeenCalledWith('New Card')
     })
 
     it('closes add modal without creating card when cancelled', () => {

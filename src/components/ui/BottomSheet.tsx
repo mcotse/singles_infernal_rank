@@ -1,6 +1,5 @@
 import { type ReactNode, useEffect, useId } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { wobbly } from '../../styles/wobbly'
 import { springConfig } from '../../styles/tokens'
 
 export interface BottomSheetProps {

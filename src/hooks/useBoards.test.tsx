@@ -7,7 +7,7 @@ import type { Board } from '../lib/types'
 // Mock the storage module
 vi.mock('../lib/storage')
 
-const mockStorage = storage as {
+const mockStorage = storage as unknown as {
   getBoards: ReturnType<typeof vi.fn>
   saveBoard: ReturnType<typeof vi.fn>
   deleteBoard: ReturnType<typeof vi.fn>

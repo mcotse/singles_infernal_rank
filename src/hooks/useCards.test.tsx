@@ -7,7 +7,7 @@ import type { Card } from '../lib/types'
 // Mock the storage module
 vi.mock('../lib/storage')
 
-const mockStorage = storage as {
+const mockStorage = storage as unknown as {
   getCardsByBoard: ReturnType<typeof vi.fn>
   saveCard: ReturnType<typeof vi.fn>
   deleteCard: ReturnType<typeof vi.fn>
@@ -380,7 +380,7 @@ describe('useCards', () => {
     it('reloads cards when boardId changes', () => {
       mockStorage.getCardsByBoard.mockReturnValue([mockCard1])
 
-      const { result, rerender } = renderHook(
+      const { rerender } = renderHook(
         ({ boardId }) => useCards(boardId),
         { initialProps: { boardId: 'board-1' } }
       )
