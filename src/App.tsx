@@ -1,22 +1,11 @@
 import { useState } from 'react'
 import { TabBar, type Tab } from './components/ui/TabBar'
+import { BoardsPage } from './pages/BoardsPage'
 
 const tabs: Tab[] = [
   { id: 'boards', label: 'Boards', icon: '📋' },
   { id: 'settings', label: 'Settings', icon: '⚙️' },
 ]
-
-/**
- * Placeholder Boards page
- */
-const BoardsPage = () => (
-  <div className="p-6">
-    <h1 className="font-['Kalam'] text-4xl text-[#2d2d2d] mb-4">My Rankings</h1>
-    <p className="font-['Patrick_Hand'] text-lg text-[#2d2d2d]/70">
-      Create and manage your ranking boards
-    </p>
-  </div>
-)
 
 /**
  * Placeholder Settings page
