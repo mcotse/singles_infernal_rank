@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useBoards } from '../hooks/useBoards'
 import { useCards } from '../hooks/useCards'
 import { useImageStorage } from '../hooks/useImageStorage'
@@ -126,8 +126,8 @@ export const BoardDetailPage = ({
   const board = getBoard(boardId)
   const selectedCard = selectedCardId ? getCard(selectedCardId) : null
 
-  // Template for new cards
-  const newCardTemplate: Card = {
+  // Template for new cards - memoized to prevent useEffect reset on every render
+  const newCardTemplate: Card = useMemo(() => ({
     id: 'new-card-temp',
     boardId,
     name: '',
@@ -139,7 +139,7 @@ export const BoardDetailPage = ({
     rank: cards.length + 1,
     createdAt: Date.now(),
     updatedAt: Date.now(),
-  }
+  }), [boardId, cards.length])
 
   if (!board) {
     return <BoardNotFound onBack={onBack} />

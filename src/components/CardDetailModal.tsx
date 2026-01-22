@@ -205,9 +205,36 @@ export const CardDetailModal = ({
     setShowDeleteConfirm(false)
   }
 
+  const footerContent = (
+    <div className="flex gap-3">
+      {!isNewCard && (
+        <Button
+          variant="secondary"
+          onClick={handleDelete}
+          className="!text-[#ff4d4d] !border-[#ff4d4d]"
+          aria-label="Delete card"
+        >
+          🗑️ Delete
+        </Button>
+      )}
+      <Button
+        variant="primary"
+        onClick={handleSave}
+        className="flex-1"
+      >
+        {isNewCard ? 'Add Card' : 'Save Changes'}
+      </Button>
+    </div>
+  )
+
   return (
     <>
-      <BottomSheet isOpen={isOpen} onClose={onClose} title={isNewCard ? 'Add Card' : 'Edit Card'}>
+      <BottomSheet
+        isOpen={isOpen}
+        onClose={onClose}
+        title={isNewCard ? 'Add Card' : 'Edit Card'}
+        footer={footerContent}
+      >
         <div className="space-y-6">
           {/* Photo Area */}
           <div data-testid="photo-area" className="flex justify-center">
@@ -235,27 +262,6 @@ export const CardDetailModal = ({
             multiline
             rows={3}
           />
-
-          {/* Actions */}
-          <div className="flex gap-3 pt-4">
-            {!isNewCard && (
-              <Button
-                variant="secondary"
-                onClick={handleDelete}
-                className="!text-[#ff4d4d] !border-[#ff4d4d]"
-                aria-label="Delete card"
-              >
-                🗑️ Delete
-              </Button>
-            )}
-            <Button
-              variant="primary"
-              onClick={handleSave}
-              className="flex-1"
-            >
-              {isNewCard ? 'Add Card' : 'Save Changes'}
-            </Button>
-          </div>
         </div>
       </BottomSheet>
 
