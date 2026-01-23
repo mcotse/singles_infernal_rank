@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background circle with wobbly edge -->
+  <path d="M256 20 C380 15, 495 120, 492 256 C498 385, 390 498, 256 492 C125 498, 18 388, 20 256 C15 125, 130 18, 256 20Z" fill="#fdfbf7" stroke="#2d2d2d" stroke-width="16"/>
+
+  <!-- Rank badge #1 -->
+  <circle cx="256" cy="180" r="70" fill="#ff4d4d" stroke="#2d2d2d" stroke-width="10"/>
+  <text x="256" y="205" text-anchor="middle" fill="white" font-family="Arial Black" font-size="80" font-weight="bold">1</text>
+
+  <!-- Three horizontal lines (list icon) with wobbly style -->
+  <path d="M130 290 Q135 285, 382 292 Q388 295, 380 300 Q375 305, 132 298 Q125 295, 130 290Z" fill="#2d2d2d"/>
+  <path d="M145 355 Q150 350, 367 357 Q373 360, 365 365 Q360 370, 147 363 Q140 360, 145 355Z" fill="#2d2d2d"/>
+  <path d="M160 420 Q165 415, 352 422 Q358 425, 350 430 Q345 435, 162 428 Q155 425, 160 420Z" fill="#2d2d2d"/>
+
+  <!-- Small rank dots -->
+  <circle cx="105" cy="295" r="15" fill="#2d2d2d"/>
+  <circle cx="120" cy="360" r="15" fill="#2d2d2d"/>
+  <circle cx="135" cy="425" r="15" fill="#2d2d2d"/>
+</svg>

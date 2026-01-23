@@ -423,13 +423,13 @@ export const SettingsPage = () => {
             className="text-[#9a958d] text-sm"
             style={{ fontFamily: "'Patrick Hand', cursive" }}
           >
-            Singles Infernal Rank v{__APP_VERSION__}
+            Ranky v{__APP_VERSION__}
           </p>
           <p
             className="text-[#9a958d] text-xs mt-1"
             style={{ fontFamily: "'Patrick Hand', cursive" }}
           >
-            Made with 🔥 for ranking enthusiasts
+            Rank anything with drag-and-drop
           </p>
         </div>
       </div>
