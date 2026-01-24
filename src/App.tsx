@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { TabBar, type Tab } from './components/ui/TabBar'
 import { BoardsPage } from './pages/BoardsPage'
 import { BoardDetailPage } from './pages/BoardDetailPage'
+import { HistoryPage } from './pages/HistoryPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { getBoards } from './lib/storage'
 import { loadSinglesInfernoS5 } from './data/singlesInfernoS5'
@@ -10,6 +11,7 @@ import { wobbly } from './styles/wobbly'
 
 const tabs: Tab[] = [
   { id: 'boards', label: 'Boards', icon: '📋' },
+  { id: 'history', label: 'History', icon: '📊' },
   { id: 'settings', label: 'Settings', icon: '⚙️' },
 ]
 
@@ -145,6 +147,7 @@ export const App = () => {
       <div className="flex-1 w-full max-w-[500px] mx-auto">
         <main className="pb-20">
           {activeTab === 'boards' && renderBoardsContent()}
+          {activeTab === 'history' && <HistoryPage />}
           {activeTab === 'settings' && <SettingsPage />}
         </main>
       </div>

@@ -2,9 +2,11 @@ import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useBoards } from '../hooks/useBoards'
 import { useCards } from '../hooks/useCards'
 import { useImageStorage } from '../hooks/useImageStorage'
+import { useSnapshots } from '../hooks/useSnapshots'
 import { RankList } from '../components/RankList'
 import { CardDetailModal } from '../components/CardDetailModal'
 import { PhotoPicker } from '../components/PhotoPicker'
+import { SaveEpisodeModal } from '../components/SaveEpisodeModal'
 import { Button } from '../components/ui/Button'
 import { wobbly } from '../styles/wobbly'
 import { compressImage, generateThumbnail } from '../lib/imageUtils'
@@ -38,6 +40,26 @@ const BackButton = ({ onClick }: { onClick: () => void }) => (
     "
   >
     ←
+  </button>
+)
+
+/**
+ * Save episode button
+ */
+const SaveEpisodeButton = ({ onClick }: { onClick: () => void }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-label="Save episode snapshot"
+    className="
+      flex items-center justify-center
+      w-10 h-10
+      text-[#2d2d2d] text-xl
+      hover:text-[#2d5da1]
+      transition-colors
+    "
+  >
+    📸
   </button>
 )
 
@@ -117,8 +139,10 @@ export const BoardDetailPage = ({
   const { getBoard } = useBoards()
   const { cards, reorderCards, updateCard, deleteCard, getCard, createCard } = useCards(boardId)
   const { saveImage, getThumbnailUrl } = useImageStorage()
+  const { createSnapshot, nextEpisodeNumber } = useSnapshots(boardId)
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [isAddingCard, setIsAddingCard] = useState(false)
+  const [showSaveEpisodeModal, setShowSaveEpisodeModal] = useState(false)
   const [photoPickerTrigger, setPhotoPickerTrigger] = useState<(() => void) | null>(null)
   const [pendingPhotoCardId, setPendingPhotoCardId] = useState<string | null>(null)
   const [thumbnailUrls, setThumbnailUrls] = useState<Record<string, string>>({})
@@ -260,6 +284,8 @@ export const BoardDetailPage = ({
           >
             {board.name}
           </h1>
+
+          <SaveEpisodeButton onClick={() => setShowSaveEpisodeModal(true)} />
         </div>
       </header>
 
@@ -306,6 +332,18 @@ export const BoardDetailPage = ({
       <PhotoPicker
         onPhotoSelect={handlePhotoSelect}
         onTriggerReady={(trigger) => setPhotoPickerTrigger(() => trigger)}
+      />
+
+      {/* Save Episode Modal */}
+      <SaveEpisodeModal
+        isOpen={showSaveEpisodeModal}
+        suggestedEpisodeNumber={nextEpisodeNumber}
+        boardName={board.name}
+        onClose={() => setShowSaveEpisodeModal(false)}
+        onSave={(episodeNumber, label, notes) => {
+          createSnapshot(cards, { episodeNumber, label, notes })
+          setShowSaveEpisodeModal(false)
+        }}
       />
     </div>
   )

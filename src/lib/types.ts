@@ -119,3 +119,76 @@ export const isCard = (obj: unknown): obj is Card => {
     typeof c.updatedAt === 'number'
   )
 }
+
+// ============ Snapshots (Episode History) ============
+
+/**
+ * RankingEntry - A single card's rank at a point in time
+ * Denormalized to preserve history even if cards are deleted
+ */
+export interface RankingEntry {
+  cardId: string
+  cardName: string
+  rank: number
+  thumbnailKey: string | null
+}
+
+/**
+ * Snapshot - A saved point-in-time capture of rankings
+ */
+export interface Snapshot {
+  id: string
+  boardId: string
+  episodeNumber: number
+  label: string
+  notes: string
+  rankings: RankingEntry[]
+  createdAt: number
+}
+
+/**
+ * Create a new Snapshot with defaults
+ */
+export const createSnapshot = (
+  boardId: string,
+  episodeNumber: number,
+  rankings: RankingEntry[],
+  options: Partial<Pick<Snapshot, 'label' | 'notes'>> = {}
+): Snapshot => ({
+  id: crypto.randomUUID(),
+  boardId,
+  episodeNumber,
+  label: options.label ?? `Episode ${episodeNumber}`,
+  notes: options.notes ?? '',
+  rankings,
+  createdAt: Date.now(),
+})
+
+/**
+ * Type guard for RankingEntry
+ */
+export const isRankingEntry = (obj: unknown): obj is RankingEntry => {
+  if (typeof obj !== 'object' || obj === null) return false
+  const r = obj as Record<string, unknown>
+  return (
+    typeof r.cardId === 'string' &&
+    typeof r.cardName === 'string' &&
+    typeof r.rank === 'number'
+  )
+}
+
+/**
+ * Type guard for Snapshot
+ */
+export const isSnapshot = (obj: unknown): obj is Snapshot => {
+  if (typeof obj !== 'object' || obj === null) return false
+  const s = obj as Record<string, unknown>
+  return (
+    typeof s.id === 'string' &&
+    typeof s.boardId === 'string' &&
+    typeof s.episodeNumber === 'number' &&
+    typeof s.label === 'string' &&
+    Array.isArray(s.rankings) &&
+    typeof s.createdAt === 'number'
+  )
+}

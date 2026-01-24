@@ -5,13 +5,14 @@
  * Separate keys for boards and cards for easy management.
  */
 
-import type { Board, Card } from './types'
-import { isBoard, isCard } from './types'
+import type { Board, Card, Snapshot } from './types'
+import { isBoard, isCard, isSnapshot } from './types'
 
 const STORAGE_KEYS = {
   boards: 'singles-infernal-rank:boards',
   cards: 'singles-infernal-rank:cards',
   settings: 'singles-infernal-rank:settings',
+  snapshots: 'singles-infernal-rank:snapshots',
 } as const
 
 /**
@@ -198,6 +199,96 @@ export const saveSettings = (settings: Partial<AppSettings>): void => {
   localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(updated))
 }
 
+// ============ Snapshots ============
+
+/**
+ * Get all snapshots from localStorage
+ */
+export const getSnapshots = (): Snapshot[] => {
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.snapshots)
+    if (!data) return []
+
+    const parsed = JSON.parse(data)
+    if (!Array.isArray(parsed)) return []
+
+    return parsed.filter(isSnapshot)
+  } catch {
+    console.error('Failed to parse snapshots from localStorage')
+    return []
+  }
+}
+
+/**
+ * Save all snapshots to localStorage
+ */
+export const saveSnapshots = (snapshots: Snapshot[]): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.snapshots, JSON.stringify(snapshots))
+  } catch (error) {
+    console.error('Failed to save snapshots to localStorage:', error)
+    throw new Error('Failed to save snapshots')
+  }
+}
+
+/**
+ * Get snapshots for a specific board, sorted by episode number
+ */
+export const getSnapshotsByBoard = (boardId: string): Snapshot[] => {
+  return getSnapshots()
+    .filter((s) => s.boardId === boardId)
+    .sort((a, b) => a.episodeNumber - b.episodeNumber)
+}
+
+/**
+ * Get a single snapshot by ID
+ */
+export const getSnapshot = (id: string): Snapshot | null => {
+  const snapshots = getSnapshots()
+  return snapshots.find((s) => s.id === id) ?? null
+}
+
+/**
+ * Save a single snapshot (create or update)
+ */
+export const saveSnapshot = (snapshot: Snapshot): void => {
+  const snapshots = getSnapshots()
+  const index = snapshots.findIndex((s) => s.id === snapshot.id)
+
+  if (index >= 0) {
+    snapshots[index] = snapshot
+  } else {
+    snapshots.push(snapshot)
+  }
+
+  saveSnapshots(snapshots)
+}
+
+/**
+ * Delete a snapshot by ID
+ */
+export const deleteSnapshot = (id: string): void => {
+  const snapshots = getSnapshots().filter((s) => s.id !== id)
+  saveSnapshots(snapshots)
+}
+
+/**
+ * Delete all snapshots for a board
+ */
+export const deleteSnapshotsByBoard = (boardId: string): void => {
+  const snapshots = getSnapshots().filter((s) => s.boardId !== boardId)
+  saveSnapshots(snapshots)
+}
+
+/**
+ * Get the next suggested episode number for a board
+ */
+export const getNextEpisodeNumber = (boardId: string): number => {
+  const boardSnapshots = getSnapshotsByBoard(boardId)
+  if (boardSnapshots.length === 0) return 1
+  return Math.max(...boardSnapshots.map((s) => s.episodeNumber)) + 1
+}
+
 // ============ Utilities ============
 
 /**
@@ -207,6 +298,7 @@ export const clearAllData = (): void => {
   localStorage.removeItem(STORAGE_KEYS.boards)
   localStorage.removeItem(STORAGE_KEYS.cards)
   localStorage.removeItem(STORAGE_KEYS.settings)
+  localStorage.removeItem(STORAGE_KEYS.snapshots)
 }
 
 /**
@@ -214,9 +306,10 @@ export const clearAllData = (): void => {
  */
 export const exportData = (): string => {
   return JSON.stringify({
-    version: '1.0',
+    version: '1.1',
     boards: getBoards(),
     cards: getCards(),
+    snapshots: getSnapshots(),
     settings: getSettings(),
     exportedAt: Date.now(),
   }, null, 2)
@@ -231,6 +324,7 @@ export interface ImportData {
   version: string
   boards: Board[]
   cards: Card[]
+  snapshots?: Snapshot[]
   settings?: AppSettings
   exportedAt?: number
 }
@@ -251,6 +345,7 @@ export interface ImportResult {
   error?: string
   boardsImported?: number
   cardsImported?: number
+  snapshotsImported?: number
 }
 
 /**
@@ -314,21 +409,24 @@ export const importData = (
     return { success: false, error: validation.errors.join(', ') }
   }
 
-  const importData = data as ImportData
+  const importedData = data as ImportData
 
-  // Filter to only valid boards and cards
-  const validBoards = importData.boards.filter(isBoard)
-  const validCards = importData.cards.filter(isCard)
+  // Filter to only valid data
+  const validBoards = importedData.boards.filter(isBoard)
+  const validCards = importedData.cards.filter(isCard)
+  const validSnapshots = (importedData.snapshots ?? []).filter(isSnapshot)
 
   if (!options.merge) {
     // Replace mode: clear existing data first
     saveBoards([])
     saveCards([])
+    saveSnapshots([])
   }
 
   // Get existing data for merge
   const existingBoards = options.merge ? getBoards() : []
   const existingCards = options.merge ? getCards() : []
+  const existingSnapshots = options.merge ? getSnapshots() : []
 
   // Merge boards (skip duplicates by ID)
   const existingBoardIds = new Set(existingBoards.map((b) => b.id))
@@ -340,9 +438,15 @@ export const importData = (
   const newCards = validCards.filter((c) => !existingCardIds.has(c.id))
   saveCards([...existingCards, ...newCards])
 
+  // Merge snapshots (skip duplicates by ID)
+  const existingSnapshotIds = new Set(existingSnapshots.map((s) => s.id))
+  const newSnapshots = validSnapshots.filter((s) => !existingSnapshotIds.has(s.id))
+  saveSnapshots([...existingSnapshots, ...newSnapshots])
+
   return {
     success: true,
     boardsImported: newBoards.length,
     cardsImported: newCards.length,
+    snapshotsImported: newSnapshots.length,
   }
 }

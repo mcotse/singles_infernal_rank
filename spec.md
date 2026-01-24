@@ -104,13 +104,34 @@ interface StoredImage {
 }
 ```
 
+### Snapshot (Episode History) [UPDATED 2026-01-24]
+```typescript
+interface RankingEntry {
+  cardId: string;          // Reference to card
+  cardName: string;        // Denormalized for history preservation
+  rank: number;            // Rank at this snapshot
+  thumbnailKey: string | null;
+}
+
+interface Snapshot {
+  id: string;              // UUID
+  boardId: string;         // Foreign key to board
+  episodeNumber: number;   // User-provided episode number
+  label: string;           // "Episode 5" or custom label
+  notes: string;           // Optional notes
+  rankings: RankingEntry[]; // Ranking data at this moment
+  createdAt: number;       // Unix timestamp
+}
+```
+
 ---
 
 ## Navigation Structure
 
 **Tab Bar (bottom):**
 1. **Boards** - Main board list view
-2. **Settings** - Minimal settings
+2. **History** - Episode ranking history [UPDATED 2026-01-24]
+3. **Settings** - Minimal settings
 
 ### Boards Tab
 - **Board List View**: 2-column card grid
@@ -133,6 +154,32 @@ interface StoredImage {
 - Clear all data (with confirmation)
 - Sounds toggle (on/off)
 - About/version info
+
+### History Tab [UPDATED 2026-01-24]
+Track ranking changes episode-by-episode for ongoing shows.
+
+**Features:**
+- **Board Selector**: Dropdown to choose which board's history to view
+- **Episode Timeline**: Vertical list of saved episode snapshots
+  - Each shows: episode number badge, label, date, item count, notes
+  - Tap to view snapshot details
+  - Delete option for each snapshot
+- **Compare Mode**: Split-screen comparison of two episodes
+  - Two narrow columns showing rankings side by side
+  - Movement indicators showing who moved up/down
+- **Save Episode**: Button in Board Detail header (📸 icon)
+  - Captures current rankings as a snapshot
+  - Inputs: episode number, optional custom label, optional notes
+
+**Movement Indicators:**
+- Green ▲ with number for improvements
+- Red ▼ with number for drops
+- Yellow "NEW" badge for new entries
+- Gray dash for no change
+
+**Per-Card Trajectory:**
+- Mini history display like "3→1→2→1"
+- Shows ranking journey across all saved episodes
 
 ---
 
@@ -391,11 +438,14 @@ iPhone 14 Pro Max (430 x 932 logical pixels)
 │   ├── pages/
 │   │   ├── BoardsPage.tsx
 │   │   ├── BoardDetailPage.tsx
+│   │   ├── HistoryPage.tsx           # [ADDED] Episode history view
 │   │   └── SettingsPage.tsx
 │   ├── hooks/
 │   │   ├── useBoards.ts
 │   │   ├── useCards.ts
 │   │   ├── useImageStorage.ts
+│   │   ├── useSnapshots.ts           # [ADDED] Snapshot CRUD
+│   │   ├── useRankingComparison.ts   # [ADDED] Movement/trajectory computation
 │   │   └── useHaptics.ts
 │   ├── lib/
 │   │   ├── db.ts           # IndexedDB wrapper
