@@ -11,6 +11,7 @@ export const colors = {
   muted: '#e5e0d8',       // Old Paper / Erased Pencil
   accent: '#ff4d4d',      // Red Correction Marker
   secondary: '#2d5da1',   // Blue Ballpoint Pen
+  success: '#22c55e',     // Green Checkmark
   border: '#2d2d2d',      // Pencil Lead
 
   // Special colors

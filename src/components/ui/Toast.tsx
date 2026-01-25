@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { wobbly } from '../../styles/wobbly'
-import { springConfig } from '../../styles/tokens'
+import { colors, springConfig } from '../../styles/tokens'
 
 export interface ToastProps {
   message: string
@@ -25,9 +25,9 @@ export const Toast = ({
   }, [duration, onClose])
 
   const bgColor = {
-    error: 'bg-[#ff4d4d]',
-    success: 'bg-[#22c55e]',
-    info: 'bg-[#2d5da1]',
+    error: `bg-[${colors.accent}]`,
+    success: `bg-[${colors.success}]`,
+    info: `bg-[${colors.secondary}]`,
   }[type]
 
   const icon = {
