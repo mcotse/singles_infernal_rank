@@ -173,12 +173,14 @@ export const CardDetailModal = ({
   onChangePhoto,
 }: CardDetailModalProps) => {
   const [name, setName] = useState(card.name)
+  const [nickname, setNickname] = useState(card.nickname || '')
   const [notes, setNotes] = useState(card.notes)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   // Reset form when card changes
   useEffect(() => {
     setName(card.name)
+    setNickname(card.nickname || '')
     setNotes(card.notes)
     setShowDeleteConfirm(false)
   }, [card])
@@ -186,6 +188,7 @@ export const CardDetailModal = ({
   const handleSave = () => {
     onSave({
       name: name.trim() || card.name, // Don't allow empty name
+      nickname: nickname.trim(),
       notes,
     })
     onClose()
@@ -251,6 +254,14 @@ export const CardDetailModal = ({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Enter name..."
+          />
+
+          {/* Nickname Input */}
+          <Input
+            label="Nickname"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            placeholder="Optional nickname..."
           />
 
           {/* Notes Input */}
