@@ -1,8 +1,16 @@
 import { useState, useMemo } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import type { Snapshot } from '../lib/types'
 import { wobbly } from '../styles/wobbly'
 import { springConfig } from '../styles/tokens'
+
+/** Expanded thumbnail state for hover/tap enlargement */
+interface ExpandedThumbnail {
+  cardId: string
+  url: string
+  x: number
+  y: number
+}
 
 export interface RankingTrendsChartProps {
   snapshots: Snapshot[]
@@ -73,6 +81,7 @@ const generateWobblyPath = (
 export const RankingTrendsChart = ({ snapshots, thumbnailUrls = {} }: RankingTrendsChartProps) => {
   const [hoveredCard, setHoveredCard] = useState<string | null>(null)
   const [selectedCards, setSelectedCards] = useState<Set<string>>(new Set())
+  const [expandedThumbnail, setExpandedThumbnail] = useState<ExpandedThumbnail | null>(null)
 
   // Process snapshots into trajectory data
   const { trajectories, maxRank, episodes } = useMemo(() => {
@@ -367,8 +376,19 @@ export const RankingTrendsChart = ({ snapshots, thumbnailUrls = {} }: RankingTre
                       delay: (validPoints.length - 1) * 0.1,
                     }}
                     style={{ cursor: 'pointer' }}
-                    onMouseEnter={() => setHoveredCard(traj.cardId)}
-                    onMouseLeave={() => setHoveredCard(null)}
+                    onMouseEnter={() => {
+                      setHoveredCard(traj.cardId)
+                      setExpandedThumbnail({
+                        cardId: traj.cardId,
+                        url: thumbnailUrl,
+                        x: endPoint.x,
+                        y: endPoint.y,
+                      })
+                    }}
+                    onMouseLeave={() => {
+                      setHoveredCard(null)
+                      setExpandedThumbnail(null)
+                    }}
                     onClick={() => toggleCardSelection(traj.cardId)}
                   >
                     {/* Circular thumbnail at end point */}
@@ -423,6 +443,72 @@ export const RankingTrendsChart = ({ snapshots, thumbnailUrls = {} }: RankingTre
           >
             Rank
           </text>
+
+          {/* Expanded thumbnail overlay */}
+          <AnimatePresence>
+            {expandedThumbnail && (() => {
+              const expandedRadius = 48
+              const imageRadius = expandedRadius - 4
+              const shadowOffset = 5
+
+              // Calculate position with proper boundary clamping
+              // Ensure the expanded thumbnail + shadow stays within the viewBox
+              const minX = padding.left + expandedRadius
+              const maxX = chartWidth - padding.right - expandedRadius - shadowOffset
+              const minY = padding.top + expandedRadius
+              const maxY = chartHeight - padding.bottom - expandedRadius - shadowOffset
+
+              const expandedX = Math.max(minX, Math.min(expandedThumbnail.x, maxX))
+              const expandedY = Math.max(minY, Math.min(expandedThumbnail.y, maxY))
+
+              return (
+                <motion.g
+                  key={`expanded-${expandedThumbnail.cardId}`}
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.5 }}
+                  transition={{
+                    type: 'spring',
+                    stiffness: 400,
+                    damping: 25,
+                  }}
+                  style={{ pointerEvents: 'none' }}
+                >
+                  <defs>
+                    <clipPath id={`expanded-clip-${expandedThumbnail.cardId}`}>
+                      <circle cx={expandedX} cy={expandedY} r={imageRadius} />
+                    </clipPath>
+                  </defs>
+                  {/* Shadow effect - rendered first (behind) */}
+                  <circle
+                    cx={expandedX + shadowOffset}
+                    cy={expandedY + shadowOffset}
+                    r={expandedRadius}
+                    fill="#2d2d2d"
+                  />
+                  {/* White background circle */}
+                  <circle
+                    cx={expandedX}
+                    cy={expandedY}
+                    r={expandedRadius}
+                    fill="white"
+                    stroke="#2d2d2d"
+                    strokeWidth={3}
+                  />
+                  {/* Clipped image */}
+                  <image
+                    href={expandedThumbnail.url}
+                    x={expandedX - imageRadius}
+                    y={expandedY - imageRadius}
+                    width={imageRadius * 2}
+                    height={imageRadius * 2}
+                    clipPath={`url(#expanded-clip-${expandedThumbnail.cardId})`}
+                    preserveAspectRatio="xMidYMid slice"
+                  />
+                </motion.g>
+              )
+            })()}
+          </AnimatePresence>
         </svg>
       </div>
 
