@@ -2,12 +2,15 @@ import { type MouseEvent } from 'react'
 import { wobbly } from '../styles/wobbly'
 import { colors } from '../styles/tokens'
 import { DragHandle } from './DragHandle'
+import { getDisplayName } from '../hooks/useDisplayName'
 
 export interface RankCardProps {
   /** Unique card ID */
   id: string
   /** Card name/title */
   name: string
+  /** Optional nickname */
+  nickname?: string
   /** Current rank position (1-indexed) */
   rank: number
   /** Optional thumbnail URL */
@@ -16,6 +19,8 @@ export interface RankCardProps {
   notes?: string
   /** Whether the card is currently being dragged */
   isDragging?: boolean
+  /** Whether to display nickname instead of real name */
+  useNickname?: boolean
   /** Called when the card body (not handle) is tapped */
   onTap?: (id: string) => void
 }
@@ -131,12 +136,16 @@ const CardPhoto = ({ url, alt }: { url: string; alt: string }) => (
 export const RankCard = ({
   id,
   name,
+  nickname = '',
   rank,
   thumbnailUrl,
   notes,
   isDragging = false,
+  useNickname = false,
   onTap,
 }: RankCardProps) => {
+  const displayName = getDisplayName({ name, nickname }, useNickname)
+
   const handleCardTap = (e: MouseEvent) => {
     // Only trigger if clicking the card body, not the handle
     const target = e.target as HTMLElement
@@ -181,7 +190,7 @@ export const RankCard = ({
         >
           {/* Photo */}
           {thumbnailUrl ? (
-            <CardPhoto url={thumbnailUrl} alt={name} />
+            <CardPhoto url={thumbnailUrl} alt={displayName} />
           ) : (
             <PhotoPlaceholder />
           )}
@@ -194,7 +203,7 @@ export const RankCard = ({
                 fontFamily: "'Patrick Hand', cursive",
               }}
             >
-              {name}
+              {displayName}
             </h3>
             {notes && (
               <p
