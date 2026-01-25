@@ -40,7 +40,6 @@ export const useAuth = (): UseAuthReturn => {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isListening, setIsListening] = useState(false)
 
   // Derived state: user signed in but no profile yet
   const needsUsername = user !== null && profile === null && !isLoading
@@ -93,7 +92,6 @@ export const useAuth = (): UseAuthReturn => {
           }
 
           setIsLoading(false)
-          setIsListening(true)
         })
       } catch (err) {
         console.error('Error setting up auth listener:', err)

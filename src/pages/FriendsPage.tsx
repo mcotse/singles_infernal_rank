@@ -24,18 +24,16 @@ export const FriendsPage = () => {
     needsUsername,
     signIn,
     createProfile,
-    clearError,
   } = useAuth()
 
   const [isCreatingProfile, setIsCreatingProfile] = useState(false)
 
   // Handle username submission
   const handleUsernameSubmit = useCallback(
-    async (username: string) => {
+    async (username: string): Promise<void> => {
       setIsCreatingProfile(true)
-      const success = await createProfile(username)
+      await createProfile(username)
       setIsCreatingProfile(false)
-      return success
     },
     [createProfile]
   )
