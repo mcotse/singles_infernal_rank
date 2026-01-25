@@ -42,15 +42,23 @@ const EpisodeCard = ({
   onDelete?: () => void
 }) => {
   return (
-    <motion.button
-      type="button"
+    <motion.div
+      role="button"
+      tabIndex={0}
       onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onSelect()
+        }
+      }}
+      aria-label={`Select episode ${snapshot.episodeNumber}: ${snapshot.label}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={springConfig.default}
       className={`
-        w-full text-left
+        w-full text-left cursor-pointer
         bg-white
         border-[3px] border-[#2d2d2d]
         p-4
@@ -127,7 +135,7 @@ const EpisodeCard = ({
           </button>
         )}
       </div>
-    </motion.button>
+    </motion.div>
   )
 }
 

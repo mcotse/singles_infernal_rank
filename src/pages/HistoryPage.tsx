@@ -4,8 +4,11 @@ import { useSnapshots } from '../hooks/useSnapshots'
 import { useImageStorage } from '../hooks/useImageStorage'
 import { EpisodeTimeline } from '../components/EpisodeTimeline'
 import { CompareView } from '../components/CompareView'
+import { RankingTrendsChart } from '../components/RankingTrendsChart'
 import { Button } from '../components/ui/Button'
 import { wobbly } from '../styles/wobbly'
+
+type ViewMode = 'list' | 'chart' | 'compare'
 
 /**
  * Empty state when no boards exist
@@ -143,8 +146,8 @@ export const HistoryPage = () => {
   // Selected board state
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null)
 
-  // Compare mode state
-  const [compareMode, setCompareMode] = useState(false)
+  // View mode state
+  const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [leftSnapshotId, setLeftSnapshotId] = useState<string | null>(null)
   const [rightSnapshotId, setRightSnapshotId] = useState<string | null>(null)
 
@@ -161,16 +164,16 @@ export const HistoryPage = () => {
     }
   }, [boards, selectedBoardId])
 
-  // Reset compare mode when board changes
+  // Reset view mode when board changes
   useEffect(() => {
-    setCompareMode(false)
+    setViewMode('list')
     setLeftSnapshotId(null)
     setRightSnapshotId(null)
   }, [selectedBoardId])
 
   // Set default snapshots for compare mode
   useEffect(() => {
-    if (compareMode && snapshots.length >= 2) {
+    if (viewMode === 'compare' && snapshots.length >= 2) {
       if (!leftSnapshotId || !snapshots.find((s) => s.id === leftSnapshotId)) {
         setLeftSnapshotId(snapshots[0].id)
       }
@@ -178,13 +181,21 @@ export const HistoryPage = () => {
         setRightSnapshotId(snapshots[snapshots.length - 1].id)
       }
     }
-  }, [compareMode, snapshots, leftSnapshotId, rightSnapshotId])
+  }, [viewMode, snapshots, leftSnapshotId, rightSnapshotId])
 
-  // Load thumbnail URLs for compare view
+  // Load thumbnail URLs for compare and chart views
   useEffect(() => {
-    if (!compareMode) return
+    if (viewMode !== 'compare' && viewMode !== 'chart') {
+      // Revoke any existing URLs when exiting compare/chart mode
+      Object.values(thumbnailUrls).forEach((url) => {
+        URL.revokeObjectURL(url)
+      })
+      setThumbnailUrls({})
+      return
+    }
 
     let cancelled = false
+    const loadedUrls: string[] = []
 
     const loadThumbnails = async () => {
       const allThumbnailKeys = new Set<string>()
@@ -204,6 +215,7 @@ export const HistoryPage = () => {
         const url = await getThumbnailUrl(key)
         if (url) {
           urls[key] = url
+          loadedUrls.push(url)
         }
       }
 
@@ -216,8 +228,13 @@ export const HistoryPage = () => {
 
     return () => {
       cancelled = true
+      // Revoke URLs on cleanup to prevent memory leaks
+      loadedUrls.forEach((url) => {
+        URL.revokeObjectURL(url)
+      })
     }
-  }, [compareMode, snapshots, getThumbnailUrl])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode, snapshots, getThumbnailUrl])
 
   // Get selected snapshots for compare view
   const leftSnapshot = useMemo(
@@ -254,6 +271,7 @@ export const HistoryPage = () => {
   }
 
   const canCompare = snapshots.length >= 2
+  const canShowChart = snapshots.length >= 2
 
   return (
     <div className="min-h-full">
@@ -267,15 +285,27 @@ export const HistoryPage = () => {
             History
           </h1>
 
-          {canCompare && (
-            <Button
-              variant={compareMode ? 'primary' : 'secondary'}
-              size="sm"
-              onClick={() => setCompareMode(!compareMode)}
-            >
-              {compareMode ? 'Exit Compare' : 'Compare'}
-            </Button>
-          )}
+          {/* View Mode Toggle */}
+          <div className="flex gap-2">
+            {canShowChart && (
+              <Button
+                variant={viewMode === 'chart' ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => setViewMode(viewMode === 'chart' ? 'list' : 'chart')}
+              >
+                {viewMode === 'chart' ? 'List' : 'Chart'}
+              </Button>
+            )}
+            {canCompare && viewMode !== 'chart' && (
+              <Button
+                variant={viewMode === 'compare' ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => setViewMode(viewMode === 'compare' ? 'list' : 'compare')}
+              >
+                {viewMode === 'compare' ? 'Exit Compare' : 'Compare'}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Board Selector */}
@@ -286,7 +316,7 @@ export const HistoryPage = () => {
         />
 
         {/* Compare Episode Selectors */}
-        {compareMode && canCompare && (
+        {viewMode === 'compare' && canCompare && (
           <div className="flex gap-3 mt-4">
             <EpisodeSelector
               snapshots={snapshots}
@@ -306,12 +336,14 @@ export const HistoryPage = () => {
 
       {/* Content */}
       <div className="p-4">
-        {compareMode && leftSnapshot && rightSnapshot ? (
+        {viewMode === 'compare' && leftSnapshot && rightSnapshot ? (
           <CompareView
             leftSnapshot={leftSnapshot}
             rightSnapshot={rightSnapshot}
             thumbnailUrls={thumbnailUrls}
           />
+        ) : viewMode === 'chart' ? (
+          <RankingTrendsChart snapshots={snapshots} thumbnailUrls={thumbnailUrls} />
         ) : (
           <EpisodeTimeline
             snapshots={snapshots}

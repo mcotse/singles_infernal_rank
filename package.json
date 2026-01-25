@@ -16,6 +16,7 @@
     "version:major": "node scripts/bump-version.js major"
   },
   "dependencies": {
+    "agentation": "^1.3.2",
     "framer-motion": "^12.28.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

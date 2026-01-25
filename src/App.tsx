@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Agentation } from 'agentation'
 import { TabBar, type Tab } from './components/ui/TabBar'
 import { BoardsPage } from './pages/BoardsPage'
 import { BoardDetailPage } from './pages/BoardDetailPage'
@@ -163,6 +164,8 @@ export const App = () => {
           }
         }}
       />
+
+      {import.meta.env.DEV && <Agentation />}
     </div>
   )
 }

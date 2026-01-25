@@ -68,13 +68,13 @@ export const MovementIndicator = ({
       <span
         className={`
           inline-flex items-center gap-0.5
-          text-green-600
+          text-[#2d5da1]
           font-bold
           ${sizeClasses}
         `}
         style={{ fontFamily: "'Patrick Hand', cursive" }}
       >
-        <span className="text-green-600">▲</span>
+        <span className="text-[#2d5da1]">▲</span>
         {movement}
       </span>
     )

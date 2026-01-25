@@ -11,7 +11,7 @@ const mockStorage = storage as unknown as {
   getCardsByBoard: ReturnType<typeof vi.fn>
   saveCard: ReturnType<typeof vi.fn>
   deleteCard: ReturnType<typeof vi.fn>
-  saveCards: ReturnType<typeof vi.fn>
+  saveCardsForBoard: ReturnType<typeof vi.fn>
 }
 
 describe('useCards', () => {
@@ -293,8 +293,8 @@ describe('useCards', () => {
       })
 
       await waitFor(() => {
-        expect(mockStorage.saveCards).toHaveBeenCalled()
-        const savedCards = mockStorage.saveCards.mock.calls[0][0] as Card[]
+        expect(mockStorage.saveCardsForBoard).toHaveBeenCalled()
+        const savedCards = mockStorage.saveCardsForBoard.mock.calls[0][1] as Card[]
 
         // After reorder: Card 3 -> rank 1, Card 1 -> rank 2, Card 2 -> rank 3
         const card3 = savedCards.find((c) => c.id === 'card-3')
@@ -331,7 +331,7 @@ describe('useCards', () => {
         result.current.reorderCards(1, 1)
       })
 
-      expect(mockStorage.saveCards).not.toHaveBeenCalled()
+      expect(mockStorage.saveCardsForBoard).not.toHaveBeenCalled()
     })
   })
 

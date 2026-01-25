@@ -247,6 +247,7 @@ export const BoardDetailPage = ({
   // Load thumbnail URLs for cards with images
   useEffect(() => {
     let cancelled = false
+    const loadedUrls: string[] = []
 
     const loadThumbnails = async () => {
       const urls: Record<string, string> = {}
@@ -257,6 +258,7 @@ export const BoardDetailPage = ({
           const url = await getThumbnailUrl(card.thumbnailKey)
           if (url) {
             urls[card.id] = url
+            loadedUrls.push(url)
           }
         }
       }
@@ -268,6 +270,10 @@ export const BoardDetailPage = ({
 
     return () => {
       cancelled = true
+      // Revoke URLs on cleanup to prevent memory leaks
+      loadedUrls.forEach((url) => {
+        URL.revokeObjectURL(url)
+      })
     }
   }, [cards, getThumbnailUrl])
 
@@ -341,8 +347,14 @@ export const BoardDetailPage = ({
         boardName={board.name}
         onClose={() => setShowSaveEpisodeModal(false)}
         onSave={(episodeNumber, label, notes) => {
-          createSnapshot(cards, { episodeNumber, label, notes })
-          setShowSaveEpisodeModal(false)
+          try {
+            createSnapshot(cards, { episodeNumber, label, notes })
+            setShowSaveEpisodeModal(false)
+          } catch (error) {
+            console.error('Failed to save snapshot:', error)
+            // Keep modal open so user knows save failed
+            alert('Failed to save episode. Please try again.')
+          }
         }}
       />
     </div>
