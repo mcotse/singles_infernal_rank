@@ -258,6 +258,21 @@ Apply TDD to:
 - Checking responsive behavior at 430px width
 - Testing PWA functionality
 
+### Test Process Cleanup - IMPORTANT
+Vitest workers can become orphaned and consume significant memory (5-8GB each). The test scripts now auto-cleanup before running, but:
+
+**If tests are interrupted or your machine is slow:**
+```bash
+bun run test:clean  # Kill all orphaned vitest processes
+```
+
+**At end of session or if machine is laggy:**
+```bash
+pkill -f vitest  # Quick cleanup of any vitest processes
+```
+
+**Do NOT leave vitest watch mode running** - always use `Ctrl+C` to properly terminate, or use `bun run test:run` for single-run mode.
+
 ### Checklist Before Committing
 - [ ] No TypeScript errors
 - [ ] Renders correctly at 430px width (verify with agent-browser)
