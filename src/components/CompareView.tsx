@@ -1,7 +1,10 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import type { Snapshot } from '../lib/types'
 import { wobbly } from '../styles/wobbly'
 import { MovementIndicator } from './MovementIndicator'
+import { NicknameToggle } from './ui/NicknameToggle'
+import { getDisplayNameFromEntry } from '../hooks/useDisplayName'
+import { getSettings, saveSettings } from '../lib/storage'
 
 export interface CompareViewProps {
   /** Left snapshot (usually earlier episode) */
@@ -55,11 +58,13 @@ const RankingColumn = ({
   thumbnailUrls,
   movements,
   showMovement,
+  useNickname,
 }: {
   snapshot: Snapshot
   thumbnailUrls: Record<string, string>
   movements: Map<string, { leftRank: number | null; rightRank: number | null; movement: number | null; isNew: boolean }>
   showMovement: boolean
+  useNickname: boolean
 }) => {
   return (
     <div className="flex-1 min-w-0">
@@ -91,6 +96,7 @@ const RankingColumn = ({
         {snapshot.rankings.map((entry) => {
           const movement = movements.get(entry.cardId)
           const thumbnailUrl = entry.thumbnailKey ? thumbnailUrls[entry.thumbnailKey] : null
+          const displayName = getDisplayNameFromEntry(entry, useNickname)
 
           return (
             <div
@@ -128,7 +134,7 @@ const RankingColumn = ({
                 >
                   <img
                     src={thumbnailUrl}
-                    alt={entry.cardName}
+                    alt={displayName}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -153,7 +159,7 @@ const RankingColumn = ({
                 className="flex-1 min-w-0 truncate text-sm text-[#2d2d2d]"
                 style={{ fontFamily: "'Patrick Hand', cursive" }}
               >
-                {entry.cardName}
+                {displayName}
               </div>
 
               {/* Movement Indicator (only on right column) */}
@@ -183,40 +189,68 @@ export const CompareView = ({
   rightSnapshot,
   thumbnailUrls,
 }: CompareViewProps) => {
+  const [useNickname, setUseNickname] = useState(() => getSettings().nicknameModeCompareView)
+
   const movements = useMemo(
     () => computeMovement(leftSnapshot, rightSnapshot),
     [leftSnapshot, rightSnapshot]
   )
 
+  // Toggle nickname mode and persist to settings
+  const handleToggleNickname = useCallback(() => {
+    setUseNickname(prev => {
+      const newValue = !prev
+      saveSettings({ nicknameModeCompareView: newValue })
+      return newValue
+    })
+  }, [])
+
+  // Check if any entries have nicknames
+  const hasAnyNicknames = useMemo(() => {
+    const allEntries = [...leftSnapshot.rankings, ...rightSnapshot.rankings]
+    return allEntries.some(entry => entry.cardNickname && entry.cardNickname.trim() !== '')
+  }, [leftSnapshot, rightSnapshot])
+
   return (
-    <div
-      className="
-        flex
-        border-[3px] border-[#2d2d2d]
-        shadow-[4px_4px_0px_0px_#2d2d2d]
-        overflow-hidden
-        bg-white
-      "
-      style={{ borderRadius: wobbly.lg }}
-    >
-      {/* Left Column */}
-      <RankingColumn
-        snapshot={leftSnapshot}
-        thumbnailUrls={thumbnailUrls}
-        movements={movements}
-        showMovement={false}
-      />
+    <div className="space-y-2">
+      {/* Nickname Toggle - only show if some entries have nicknames */}
+      {hasAnyNicknames && (
+        <div className="flex justify-end">
+          <NicknameToggle enabled={useNickname} onToggle={handleToggleNickname} />
+        </div>
+      )}
 
-      {/* Divider */}
-      <div className="w-[3px] bg-[#2d2d2d] flex-shrink-0" />
+      <div
+        className="
+          flex
+          border-[3px] border-[#2d2d2d]
+          shadow-[4px_4px_0px_0px_#2d2d2d]
+          overflow-hidden
+          bg-white
+        "
+        style={{ borderRadius: wobbly.lg }}
+      >
+        {/* Left Column */}
+        <RankingColumn
+          snapshot={leftSnapshot}
+          thumbnailUrls={thumbnailUrls}
+          movements={movements}
+          showMovement={false}
+          useNickname={useNickname}
+        />
 
-      {/* Right Column */}
-      <RankingColumn
-        snapshot={rightSnapshot}
-        thumbnailUrls={thumbnailUrls}
-        movements={movements}
-        showMovement={true}
-      />
+        {/* Divider */}
+        <div className="w-[3px] bg-[#2d2d2d] flex-shrink-0" />
+
+        {/* Right Column */}
+        <RankingColumn
+          snapshot={rightSnapshot}
+          thumbnailUrls={thumbnailUrls}
+          movements={movements}
+          showMovement={true}
+          useNickname={useNickname}
+        />
+      </div>
     </div>
   )
 }
