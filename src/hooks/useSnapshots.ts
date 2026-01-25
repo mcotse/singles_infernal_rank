@@ -62,6 +62,7 @@ export const useSnapshots = (boardId: string): UseSnapshotsReturn => {
         .map((card) => ({
           cardId: card.id,
           cardName: card.name,
+          cardNickname: card.nickname || undefined,
           rank: card.rank,
           thumbnailKey: card.thumbnailKey,
         }))
