@@ -35,6 +35,7 @@ export interface Card {
   id: string              // UUID
   boardId: string         // Foreign key to board
   name: string
+  nickname: string        // Optional nickname (displayed when nickname mode is on)
   imageKey: string | null // IndexedDB key for full image
   thumbnailKey: string | null // IndexedDB key for thumbnail
   imageCrop: ImageCrop | null
@@ -75,11 +76,12 @@ export const createCard = (
   boardId: string,
   name: string,
   rank: number,
-  options: Partial<Pick<Card, 'imageKey' | 'thumbnailKey' | 'imageCrop' | 'notes' | 'metadata'>> = {}
+  options: Partial<Pick<Card, 'imageKey' | 'thumbnailKey' | 'imageCrop' | 'notes' | 'nickname' | 'metadata'>> = {}
 ): Card => ({
   id: crypto.randomUUID(),
   boardId,
   name,
+  nickname: options.nickname ?? '',
   imageKey: options.imageKey ?? null,
   thumbnailKey: options.thumbnailKey ?? null,
   imageCrop: options.imageCrop ?? null,
@@ -129,6 +131,7 @@ export const isCard = (obj: unknown): obj is Card => {
 export interface RankingEntry {
   cardId: string
   cardName: string
+  cardNickname?: string   // Optional nickname at time of snapshot
   rank: number
   thumbnailKey: string | null
 }

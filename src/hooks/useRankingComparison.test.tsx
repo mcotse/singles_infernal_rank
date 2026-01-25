@@ -10,6 +10,7 @@ describe('useRankingComparison', () => {
     id,
     boardId,
     name,
+    nickname: '',
     imageKey: null,
     thumbnailKey: null,
     imageCrop: null,

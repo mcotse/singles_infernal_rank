@@ -8,6 +8,7 @@ describe('RankList', () => {
     id,
     boardId: 'board-1',
     name,
+    nickname: '',
     imageKey: null,
     thumbnailKey: null,
     imageCrop: null,

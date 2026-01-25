@@ -157,6 +157,7 @@ export const BoardDetailPage = ({
     id: 'new-card-temp',
     boardId,
     name: '',
+    nickname: '',
     imageKey: null,
     thumbnailKey: null,
     imageCrop: null,

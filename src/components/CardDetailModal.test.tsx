@@ -8,6 +8,7 @@ describe('CardDetailModal', () => {
     id: 'card-1',
     boardId: 'board-1',
     name: 'Test Card',
+    nickname: '',
     imageKey: null,
     thumbnailKey: null,
     imageCrop: null,
@@ -29,7 +30,7 @@ describe('CardDetailModal', () => {
   describe('rendering', () => {
     it('renders card name in input', () => {
       render(<CardDetailModal {...defaultProps} />)
-      const nameInput = screen.getByLabelText(/name/i)
+      const nameInput = screen.getByLabelText(/^name$/i)
       expect(nameInput).toHaveValue('Test Card')
     })
 
@@ -56,14 +57,14 @@ describe('CardDetailModal', () => {
 
     it('does not render when closed', () => {
       render(<CardDetailModal {...defaultProps} isOpen={false} />)
-      expect(screen.queryByLabelText(/name/i)).not.toBeInTheDocument()
+      expect(screen.queryByLabelText(/^name$/i)).not.toBeInTheDocument()
     })
   })
 
   describe('editing', () => {
     it('allows editing name', () => {
       render(<CardDetailModal {...defaultProps} />)
-      const nameInput = screen.getByLabelText(/name/i)
+      const nameInput = screen.getByLabelText(/^name$/i)
 
       fireEvent.change(nameInput, { target: { value: 'New Name' } })
       expect(nameInput).toHaveValue('New Name')
@@ -83,7 +84,7 @@ describe('CardDetailModal', () => {
       const onSave = vi.fn()
       render(<CardDetailModal {...defaultProps} onSave={onSave} />)
 
-      const nameInput = screen.getByLabelText(/name/i)
+      const nameInput = screen.getByLabelText(/^name$/i)
       fireEvent.change(nameInput, { target: { value: 'Updated Name' } })
 
       fireEvent.click(screen.getByRole('button', { name: /save/i }))

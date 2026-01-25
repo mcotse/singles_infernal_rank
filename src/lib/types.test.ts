@@ -133,6 +133,7 @@ describe('Data Model Types', () => {
         id: '123',
         boardId: 'board-1',
         name: 'Test',
+        nickname: '',
         imageKey: null,
         thumbnailKey: null,
         imageCrop: null,

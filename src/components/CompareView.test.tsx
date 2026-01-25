@@ -184,9 +184,11 @@ describe('CompareView', () => {
         />
       )
 
-      // The container should have display:flex with two flex-1 children
-      const wrapper = container.firstChild as HTMLElement
-      expect(wrapper.className).toContain('flex')
+      // The outer container has space-y-2, the inner container has flex
+      const outerWrapper = container.firstChild as HTMLElement
+      const innerWrapper = outerWrapper.querySelector('.flex') as HTMLElement
+      expect(innerWrapper).toBeTruthy()
+      expect(innerWrapper.className).toContain('flex')
     })
 
     it('has divider between columns', () => {

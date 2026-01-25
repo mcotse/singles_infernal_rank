@@ -4,6 +4,8 @@ import type { PointerEvent as ReactPointerEvent } from 'react'
 import type { Card } from '../lib/types'
 import { RankCard } from './RankCard'
 import { springConfig } from '../styles/tokens'
+import { NicknameToggle } from './ui/NicknameToggle'
+import { getSettings, saveSettings } from '../lib/storage'
 
 export interface RankListProps {
   /** Cards to display, should be sorted by rank */
@@ -44,11 +46,13 @@ const DraggableCard = ({
   card,
   rank,
   thumbnailUrl,
+  useNickname,
   onTap,
 }: {
   card: Card
   rank: number
   thumbnailUrl?: string
+  useNickname: boolean
   onTap: (id: string) => void
 }) => {
   const [isDragging, setIsDragging] = useState(false)
@@ -180,10 +184,12 @@ const DraggableCard = ({
         <RankCard
           id={card.id}
           name={card.name}
+          nickname={card.nickname}
           rank={rank}
           thumbnailUrl={thumbnailUrl}
           notes={card.notes}
           isDragging={isDragging || isLongPressing}
+          useNickname={useNickname}
           onTap={onTap}
         />
       </div>
@@ -212,6 +218,16 @@ export const RankList = ({
   onCardTap,
 }: RankListProps) => {
   const [orderedCards, setOrderedCards] = useState(cards)
+  const [useNickname, setUseNickname] = useState(() => getSettings().nicknameModeRankList)
+
+  // Toggle nickname mode and persist to settings
+  const handleToggleNickname = useCallback(() => {
+    setUseNickname(prev => {
+      const newValue = !prev
+      saveSettings({ nicknameModeRankList: newValue })
+      return newValue
+    })
+  }, [])
 
   // Keep local state in sync with props when cards change (edit, add, delete)
   useEffect(() => {
@@ -263,24 +279,37 @@ export const RankList = ({
     return <EmptyList />
   }
 
+  // Check if any cards have nicknames to show the toggle
+  const hasAnyNicknames = orderedCards.some(card => card.nickname && card.nickname.trim() !== '')
+
   return (
-    <Reorder.Group
-      data-testid="rank-list"
-      axis="y"
-      values={orderedCards}
-      onReorder={handleReorder}
-      className="flex flex-col gap-3 p-4"
-      layoutScroll
-    >
-      {orderedCards.map((card, index) => (
-        <DraggableCard
-          key={card.id}
-          card={card}
-          rank={index + 1}
-          thumbnailUrl={thumbnailUrls[card.id]}
-          onTap={onCardTap}
-        />
-      ))}
-    </Reorder.Group>
+    <div className="flex flex-col">
+      {/* Nickname Toggle - only show if some cards have nicknames */}
+      {hasAnyNicknames && (
+        <div className="flex justify-end px-4 pt-2">
+          <NicknameToggle enabled={useNickname} onToggle={handleToggleNickname} />
+        </div>
+      )}
+
+      <Reorder.Group
+        data-testid="rank-list"
+        axis="y"
+        values={orderedCards}
+        onReorder={handleReorder}
+        className="flex flex-col gap-3 p-4"
+        layoutScroll
+      >
+        {orderedCards.map((card, index) => (
+          <DraggableCard
+            key={card.id}
+            card={card}
+            rank={index + 1}
+            thumbnailUrl={thumbnailUrls[card.id]}
+            useNickname={useNickname}
+            onTap={onCardTap}
+          />
+        ))}
+      </Reorder.Group>
+    </div>
   )
 }

@@ -20,11 +20,19 @@ const STORAGE_KEYS = {
  */
 export interface AppSettings {
   soundsEnabled: boolean
-  // Add more settings as needed
+  /** Show nicknames instead of real names in rank list */
+  nicknameModeRankList: boolean
+  /** Show nicknames instead of real names in compare view */
+  nicknameModeCompareView: boolean
+  /** Show nicknames instead of real names in trends chart */
+  nicknameModeChart: boolean
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
   soundsEnabled: false,
+  nicknameModeRankList: false,
+  nicknameModeCompareView: false,
+  nicknameModeChart: false,
 }
 
 // ============ Boards ============
