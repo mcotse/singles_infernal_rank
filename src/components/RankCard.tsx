@@ -1,4 +1,5 @@
-import { type MouseEvent } from 'react'
+import { type MouseEvent, useState, useEffect, useCallback } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { wobbly } from '../styles/wobbly'
 import { colors } from '../styles/tokens'
 import { DragHandle } from './DragHandle'
@@ -93,24 +94,120 @@ const PhotoPlaceholder = () => (
 )
 
 /**
- * Card photo thumbnail
+ * Expandable card photo thumbnail
+ * - Hover (web): enlarges thumbnail
+ * - Tap (mobile): enlarges thumbnail
+ * - Tap away / mouse leave: returns to original size
  */
-const CardPhoto = ({ url, alt }: { url: string; alt: string }) => (
-  <div
-    className="
-      w-14 h-14 min-w-14
-      border-2 border-[#2d2d2d]
-      overflow-hidden
-    "
-    style={{ borderRadius: wobbly.circle }}
-  >
-    <img
-      src={url}
-      alt={alt}
-      className="w-full h-full object-cover"
-    />
-  </div>
-)
+const ExpandablePhoto = ({ url, alt }: { url: string; alt: string }) => {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [isHovering, setIsHovering] = useState(false)
+
+  // Determine if expanded (either by hover on desktop or tap on mobile)
+  const showExpanded = isExpanded || isHovering
+
+  // Handle click outside to collapse on mobile
+  useEffect(() => {
+    if (!isExpanded) return
+
+    const handleClickOutside = (e: Event) => {
+      const target = e.target as Element | null
+      if (target && !target.closest('[data-expandable-photo]')) {
+        setIsExpanded(false)
+      }
+    }
+
+    // Use capture phase to catch the event before it bubbles
+    document.addEventListener('mousedown', handleClickOutside, true)
+    document.addEventListener('touchstart', handleClickOutside, true)
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside, true)
+      document.removeEventListener('touchstart', handleClickOutside, true)
+    }
+  }, [isExpanded])
+
+  const handleTap = useCallback(
+    (e: MouseEvent) => {
+      e.stopPropagation()
+      // Toggle expanded state on tap (for mobile)
+      setIsExpanded((prev) => !prev)
+    },
+    []
+  )
+
+  const handleMouseEnter = useCallback(() => {
+    setIsHovering(true)
+  }, [])
+
+  const handleMouseLeave = useCallback(() => {
+    setIsHovering(false)
+  }, [])
+
+  return (
+    <div className="relative" data-expandable-photo>
+      {/* Base thumbnail - always visible */}
+      <motion.div
+        className="
+          w-14 h-14 min-w-14
+          border-2 border-[#2d2d2d]
+          overflow-hidden
+          cursor-pointer
+        "
+        style={{ borderRadius: wobbly.circle }}
+        onClick={handleTap}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        <img
+          src={url}
+          alt={alt}
+          className="w-full h-full object-cover"
+          draggable={false}
+        />
+      </motion.div>
+
+      {/* Expanded overlay */}
+      <AnimatePresence>
+        {showExpanded && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{
+              type: 'spring',
+              stiffness: 400,
+              damping: 25,
+            }}
+            className="
+              absolute z-50
+              w-32 h-32
+              border-[3px] border-[#2d2d2d]
+              shadow-[6px_6px_0px_0px_#2d2d2d]
+              overflow-hidden
+              pointer-events-none
+            "
+            style={{
+              borderRadius: wobbly.circle,
+              // Center the expanded image over the thumbnail
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              backgroundColor: 'white',
+            }}
+          >
+            <img
+              src={url}
+              alt={alt}
+              className="w-full h-full object-cover"
+              draggable={false}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
 
 /**
  * RankCard Component
@@ -138,9 +235,12 @@ export const RankCard = ({
   onTap,
 }: RankCardProps) => {
   const handleCardTap = (e: MouseEvent) => {
-    // Only trigger if clicking the card body, not the handle
+    // Only trigger if clicking the card body, not the handle or expandable photo
     const target = e.target as HTMLElement
     if (target.closest('[data-testid="drag-handle"]')) {
+      return
+    }
+    if (target.closest('[data-expandable-photo]')) {
       return
     }
     onTap?.(id)
@@ -181,7 +281,7 @@ export const RankCard = ({
         >
           {/* Photo */}
           {thumbnailUrl ? (
-            <CardPhoto url={thumbnailUrl} alt={name} />
+            <ExpandablePhoto url={thumbnailUrl} alt={name} />
           ) : (
             <PhotoPlaceholder />
           )}
