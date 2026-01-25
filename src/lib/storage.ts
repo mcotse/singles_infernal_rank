@@ -173,6 +173,15 @@ export const deleteCardsByBoard = (boardId: string): void => {
   saveCards(cards)
 }
 
+/**
+ * Save cards for a specific board (preserves cards from other boards)
+ */
+export const saveCardsForBoard = (boardId: string, boardCards: Card[]): void => {
+  // Get all cards, remove cards for this board, then add the new ones
+  const otherCards = getCards().filter((c) => c.boardId !== boardId)
+  saveCards([...otherCards, ...boardCards])
+}
+
 // ============ Settings ============
 
 /**

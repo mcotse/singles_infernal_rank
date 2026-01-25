@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react'
-import { getCardsByBoard, saveCard, deleteCard, saveCards } from '../lib/storage'
+import { getCardsByBoard, saveCard, deleteCard, saveCardsForBoard } from '../lib/storage'
 import { createCard as createCardEntity, type Card } from '../lib/types'
 
 interface UseCardsReturn {
@@ -94,12 +94,12 @@ export const useCards = (boardId: string): UseCardsReturn => {
         updatedAt: Date.now(),
       }))
 
-      // Persist all cards with new ranks
-      saveCards(updatedCards)
+      // Persist cards for this board only (preserves other boards' cards)
+      saveCardsForBoard(boardId, updatedCards)
 
       return updatedCards
     })
-  }, [])
+  }, [boardId])
 
   const getCardFn = useCallback(
     (id: string): Card | undefined => {
