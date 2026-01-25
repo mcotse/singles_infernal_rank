@@ -233,7 +233,11 @@ export const HistoryPage = () => {
         URL.revokeObjectURL(url)
       })
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // thumbnailUrls is intentionally omitted to avoid infinite loop:
+    // This effect sets thumbnailUrls, so including it would cause the effect
+    // to re-run every time it completes, creating an endless cycle.
+    // The effect only needs to run when viewMode, snapshots, or getThumbnailUrl changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMode, snapshots, getThumbnailUrl])
 
   // Get selected snapshots for compare view

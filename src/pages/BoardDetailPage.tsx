@@ -8,6 +8,7 @@ import { CardDetailModal } from '../components/CardDetailModal'
 import { PhotoPicker } from '../components/PhotoPicker'
 import { SaveEpisodeModal } from '../components/SaveEpisodeModal'
 import { Button } from '../components/ui/Button'
+import { useToast } from '../components/ui/Toast'
 import { wobbly } from '../styles/wobbly'
 import { compressImage, generateThumbnail } from '../lib/imageUtils'
 import type { Card } from '../lib/types'
@@ -140,6 +141,7 @@ export const BoardDetailPage = ({
   const { cards, reorderCards, updateCard, deleteCard, getCard, createCard } = useCards(boardId)
   const { saveImage, getThumbnailUrl } = useImageStorage()
   const { createSnapshot, nextEpisodeNumber } = useSnapshots(boardId)
+  const { showToast, ToastContainer } = useToast()
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [isAddingCard, setIsAddingCard] = useState(false)
   const [showSaveEpisodeModal, setShowSaveEpisodeModal] = useState(false)
@@ -353,10 +355,13 @@ export const BoardDetailPage = ({
           } catch (error) {
             console.error('Failed to save snapshot:', error)
             // Keep modal open so user knows save failed
-            alert('Failed to save episode. Please try again.')
+            showToast('Failed to save episode. Please try again.', 'error')
           }
         }}
       />
+
+      {/* Toast notifications */}
+      <ToastContainer />
     </div>
   )
 }

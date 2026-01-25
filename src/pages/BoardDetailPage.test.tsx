@@ -17,8 +17,28 @@ const mockUseCards = vi.mocked(useCardsModule.useCards)
 const mockUseImageStorage = vi.mocked(useImageStorageModule.useImageStorage)
 const mockUseSnapshots = vi.mocked(useSnapshotsModule.useSnapshots)
 
-// TODO: Tests hang during module initialization - needs investigation
-// Possibly related to how useSnapshots interacts with storage during mock setup
+/**
+ * BoardDetailPage Tests
+ *
+ * KNOWN ISSUE: These tests are skipped due to a Vitest+Bun timing issue where
+ * the test hangs during module initialization when all 4 hooks are mocked.
+ *
+ * Investigation notes:
+ * - Individual component imports work fine (RankList, CardDetailModal, etc.)
+ * - Dynamic import of BoardDetailPage works fine
+ * - BoardsPage tests work (only mocks useBoards and useCards)
+ * - The hang occurs when all 4 mocks are active AND we render the component
+ * - This appears to be related to how Bun handles vi.mock() hoisting with
+ *   complex module graphs involving multiple async hooks
+ *
+ * Workaround attempts that didn't work:
+ * - Factory function mocks (vi.mock(..., () => ({...})))
+ * - beforeAll with dynamic imports
+ * - Adding storage module mocks
+ *
+ * TODO: Investigate further or wait for Vitest/Bun updates
+ * Reference: https://github.com/vitest-dev/vitest/issues (mock hoisting issues)
+ */
 describe.skip('BoardDetailPage', () => {
   const mockBoard = {
     id: 'board-1',
