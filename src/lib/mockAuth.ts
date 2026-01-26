@@ -21,6 +21,7 @@ const createMockTimestamp = (ms: number): Timestamp => ({
   toMillis: () => ms,
   isEqual: (other: Timestamp) => other.toMillis() === ms,
   valueOf: () => `Timestamp(seconds=${Math.floor(ms / 1000)}, nanoseconds=${(ms % 1000) * 1e6})`,
+  toJSON: () => ({ seconds: Math.floor(ms / 1000), nanoseconds: (ms % 1000) * 1e6, type: 'Timestamp' }),
 })
 
 const MOCK_AUTH_KEY = 'mock-auth-user'
