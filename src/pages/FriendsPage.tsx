@@ -18,6 +18,7 @@ import { UsernameSetupModal } from '../components/modals/UsernameSetupModal'
 import { SyncMigrationModal } from '../components/modals/SyncMigrationModal'
 import { FriendCard } from '../components/FriendCard'
 import { FriendRequestCard } from '../components/FriendRequestCard'
+import { UserSearchSection } from '../components/UserSearchSection'
 import { Button } from '../components/ui/Button'
 import { wobbly } from '../styles/wobbly'
 import { springConfig } from '../styles/tokens'
@@ -54,6 +55,7 @@ export const FriendsPage = () => {
     outgoingRequests,
     isLoading: isFriendsLoading,
     pendingCount,
+    sendRequest,
     acceptRequest,
     declineRequest,
     removeFriend,
@@ -348,6 +350,22 @@ export const FriendsPage = () => {
         )}
       </AnimatePresence>
 
+      {/* User Search Section */}
+      {user && (
+        <UserSearchSection
+          currentUserId={user.uid}
+          onSendRequest={sendRequest}
+          existingFriendIds={friends.map((f) => f.profile.uid)}
+          pendingRequestIds={[
+            ...outgoingRequests.map((r) =>
+              r.friendship.users[0] === user.uid
+                ? r.friendship.users[1]
+                : r.friendship.users[0]
+            ),
+          ]}
+        />
+      )}
+
       {/* Friends List */}
       {isFriendsLoading ? (
         <div className="flex justify-center py-8">
@@ -430,17 +448,10 @@ export const FriendsPage = () => {
           </h3>
 
           <p
-            className="text-[#2d2d2d]/70 mb-4"
+            className="text-[#2d2d2d]/70"
             style={{ fontFamily: "'Patrick Hand', cursive" }}
           >
-            Search for friends by username or share your invite link
-          </p>
-
-          <p
-            className="text-[#2d2d2d]/50 text-sm"
-            style={{ fontFamily: "'Patrick Hand', cursive" }}
-          >
-            Username search coming soon!
+            Use the search above to find friends by username
           </p>
         </motion.div>
       )}

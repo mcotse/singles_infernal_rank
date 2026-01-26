@@ -182,7 +182,8 @@ describe('FriendsPage', () => {
 
       render(<FriendsPage />)
 
-      expect(screen.getByText(/friends/i)).toBeInTheDocument()
+      // Check for the main "Friends" heading (level 1)
+      expect(screen.getByRole('heading', { level: 1, name: /friends/i })).toBeInTheDocument()
       expect(screen.queryByRole('button', { name: /sign in with google/i })).not.toBeInTheDocument()
     })
   })
