@@ -1,7 +1,7 @@
 # Social Features Specification
 
-> **Status:** Phase 1 Complete
-> **Version:** 0.2.0
+> **Status:** Phase 3 Complete
+> **Version:** 0.3.0
 > **Last Updated:** 2026-01-25
 
 ## Overview
@@ -509,11 +509,26 @@ match /friendships/{friendshipId} {
   - View friends list with pending request badge
   - Block users (removes friendship, prevents future requests)
 
-### Phase 3: Board Sharing
-- [ ] Per-board visibility settings
-- [ ] Public link generation/revocation
-- [ ] View friend's boards
-- [ ] Share settings UI
+### Phase 3: Board Sharing ✅ COMPLETE
+- [x] Per-board visibility settings
+- [x] Public link generation/revocation
+- [x] View friend's boards
+- [x] Share settings UI
+
+#### Phase 3 Implementation Notes
+- **Files added:**
+  - `src/lib/firestoreBoards.ts` - Added updateBoardSharing, revokePublicLink, canUserViewBoard, filterVisibleBoards, getSharedBoardCountByFriend
+  - `src/hooks/useFriendBoards.ts` - Fetch friend's shared boards with counts
+  - `src/components/BoardSettingsSheet.tsx` - Full sharing configuration UI
+  - `src/components/ShareModal.tsx` - Quick share modal (private/friends/public)
+  - `src/pages/FriendProfilePage.tsx` - View friend's profile and shared boards
+- **Features:**
+  - Per-board visibility: private, friends, specific friends, public
+  - Public link generation with unique IDs
+  - Link revocation (generates new ID)
+  - Friend boards viewing with shared board counts on FriendCard
+  - BoardSettingsSheet for detailed sharing config
+  - ShareModal for quick one-tap sharing
 
 ### Phase 4: Templates & Comparison
 - [ ] Template data model
