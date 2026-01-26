@@ -2,7 +2,7 @@
   "name": "Hot Takes",
   "short_name": "Hot Takes",
   "description": "Rank anything with drag-and-drop. Hand-drawn aesthetic.",
-  "start_url": "/singles_infernal_rank/",
+  "start_url": "/hot-takes/",
   "display": "standalone",
   "background_color": "#fdfbf7",
   "theme_color": "#fdfbf7",

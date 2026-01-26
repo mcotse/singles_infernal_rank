@@ -1,4 +1,4 @@
-# Singles Infernal Rank
+# Hot Takes
 
 A mobile-first PWA for ranking things with drag-and-drop. Features a distinctive hand-drawn aesthetic inspired by paper and pencil sketches.
 
@@ -79,8 +79,8 @@ The app uses a hand-drawn aesthetic throughout:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/singles_infernal_rank.git
-cd singles_infernal_rank
+git clone https://github.com/mcotse/hot-takes.git
+cd hot-takes
 
 # Install dependencies
 npm install
@@ -89,7 +89,7 @@ npm install
 npm run dev
 ```
 
-Then open http://localhost:5173/singles_infernal_rank/
+Then open http://localhost:5173/hot-takes/
 
 ### Build for Production
 

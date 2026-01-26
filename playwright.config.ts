@@ -8,7 +8,7 @@ export default defineConfig({
   workers: 1,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:5173/singles_infernal_rank/',
+    baseURL: 'http://localhost:5173/hot-takes/',
     trace: 'on-first-retry',
     screenshot: 'on',
   },
@@ -20,7 +20,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:5173/singles_infernal_rank/',
+    url: 'http://localhost:5173/hot-takes/',
     reuseExistingServer: true,
   },
 })

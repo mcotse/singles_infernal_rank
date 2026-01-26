@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-const BASE_URL = 'http://localhost:5173/singles_infernal_rank/'
+const BASE_URL = 'http://localhost:5173/hot-takes/'
 
 test.describe('Seed Data Loading and Card Editing', () => {
   test('should load seed data, display both boards, and allow card editing', async ({ page }) => {

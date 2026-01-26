@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-const BASE_URL = 'http://localhost:5173/singles_infernal_rank/'
+const BASE_URL = 'http://localhost:5173/hot-takes/'
 
 test.describe('History Timeline Nickname Toggle', () => {
   test.beforeEach(async ({ page }) => {
