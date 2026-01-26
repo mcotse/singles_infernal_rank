@@ -252,3 +252,109 @@ export const fullBoardSync = async (
 
   return merged
 }
+
+// ============ Public Link Management ============
+
+/**
+ * Generate a unique, URL-safe public link ID
+ * Uses crypto for randomness and encodes as alphanumeric
+ */
+export const generatePublicLinkId = (): string => {
+  // Use crypto for secure random bytes
+  const bytes = new Uint8Array(12)
+  crypto.getRandomValues(bytes)
+
+  // Convert to alphanumeric base64 (URL-safe)
+  const base64 = btoa(String.fromCharCode(...bytes))
+
+  // Remove non-alphanumeric chars and return
+  return base64.replace(/[^a-zA-Z0-9]/g, '')
+}
+
+/**
+ * Update sharing settings for a cloud board
+ *
+ * @param board - The cloud board to update
+ * @param updates - Partial sharing settings to apply
+ * @returns Updated cloud board
+ */
+export const updateBoardSharing = (
+  board: CloudBoard,
+  updates: Partial<BoardSharing>
+): CloudBoard => {
+  const newSharing: BoardSharing = {
+    ...board.sharing,
+    ...updates,
+  }
+
+  // If enabling public link and no ID exists, generate one
+  if (updates.publicLinkEnabled && !board.sharing.publicLinkId) {
+    newSharing.publicLinkId = generatePublicLinkId()
+  }
+
+  return {
+    ...board,
+    sharing: newSharing,
+  }
+}
+
+/**
+ * Revoke the current public link and generate a new one
+ * Invalidates any existing links while keeping sharing enabled
+ *
+ * @param board - The cloud board with public link
+ * @returns Board with new publicLinkId
+ */
+export const revokePublicLink = (board: CloudBoard): CloudBoard => {
+  if (!board.sharing.publicLinkEnabled) {
+    return board
+  }
+
+  return {
+    ...board,
+    sharing: {
+      ...board.sharing,
+      publicLinkId: generatePublicLinkId(),
+    },
+  }
+}
+
+// ============ Access Control ============
+
+/**
+ * Check if a user can view a board based on visibility settings
+ *
+ * @param board - The cloud board to check
+ * @param userId - The user trying to view
+ * @param userFriendIds - IDs of the user's friends (owner UIDs)
+ * @returns true if user can view the board
+ */
+export const canUserViewBoard = (
+  board: CloudBoard,
+  userId: string,
+  userFriendIds: string[]
+): boolean => {
+  // Owner can always view
+  if (board.ownerId === userId) {
+    return true
+  }
+
+  switch (board.sharing.visibility) {
+    case 'private':
+      return false
+
+    case 'public':
+      return true
+
+    case 'friends':
+      // User must be friends with the board owner
+      return userFriendIds.includes(board.ownerId)
+
+    case 'specific':
+      // User must be in the allowed list
+      return board.sharing.allowedFriends?.includes(userId) ?? false
+
+    default:
+      return false
+  }
+}

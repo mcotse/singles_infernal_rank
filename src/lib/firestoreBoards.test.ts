@@ -248,4 +248,195 @@ describe('firestoreBoards', () => {
       expect(merged[0].name).toBe('Local Board 1')
     })
   })
+
+  describe('generatePublicLinkId', () => {
+    it('should generate a unique string ID', async () => {
+      const { generatePublicLinkId } = await import('./firestoreBoards')
+
+      const id1 = generatePublicLinkId()
+      const id2 = generatePublicLinkId()
+
+      expect(typeof id1).toBe('string')
+      expect(id1.length).toBeGreaterThan(0)
+      expect(id1).not.toBe(id2) // Should be unique
+    })
+
+    it('should generate URL-safe IDs', async () => {
+      const { generatePublicLinkId } = await import('./firestoreBoards')
+
+      const id = generatePublicLinkId()
+
+      // Should only contain alphanumeric characters
+      expect(id).toMatch(/^[a-zA-Z0-9]+$/)
+    })
+  })
+
+  describe('updateBoardSharing', () => {
+    it('should update board sharing settings', async () => {
+      const { toCloudBoard, updateBoardSharing } = await import('./firestoreBoards')
+
+      const cloudBoard = toCloudBoard(mockBoard, mockUserId)
+
+      const updatedBoard = updateBoardSharing(cloudBoard, {
+        visibility: 'friends',
+      })
+
+      expect(updatedBoard.sharing.visibility).toBe('friends')
+      expect(updatedBoard.sharing.publicLinkEnabled).toBe(false) // unchanged
+    })
+
+    it('should enable public link with generated ID', async () => {
+      const { toCloudBoard, updateBoardSharing } = await import('./firestoreBoards')
+
+      const cloudBoard = toCloudBoard(mockBoard, mockUserId)
+
+      const updatedBoard = updateBoardSharing(cloudBoard, {
+        visibility: 'public',
+        publicLinkEnabled: true,
+      })
+
+      expect(updatedBoard.sharing.visibility).toBe('public')
+      expect(updatedBoard.sharing.publicLinkEnabled).toBe(true)
+      expect(updatedBoard.sharing.publicLinkId).toBeDefined()
+      expect(updatedBoard.sharing.publicLinkId!.length).toBeGreaterThan(0)
+    })
+
+    it('should preserve existing publicLinkId when already set', async () => {
+      const { toCloudBoard, updateBoardSharing } = await import('./firestoreBoards')
+
+      let cloudBoard = toCloudBoard(mockBoard, mockUserId)
+      cloudBoard = updateBoardSharing(cloudBoard, {
+        visibility: 'public',
+        publicLinkEnabled: true,
+      })
+      const originalLinkId = cloudBoard.sharing.publicLinkId
+
+      // Update other settings but keep public link enabled
+      const updatedBoard = updateBoardSharing(cloudBoard, {
+        visibility: 'public',
+        publicLinkEnabled: true,
+      })
+
+      expect(updatedBoard.sharing.publicLinkId).toBe(originalLinkId)
+    })
+
+    it('should set allowedFriends for specific visibility', async () => {
+      const { toCloudBoard, updateBoardSharing } = await import('./firestoreBoards')
+
+      const cloudBoard = toCloudBoard(mockBoard, mockUserId)
+      const friendIds = ['friend-1', 'friend-2']
+
+      const updatedBoard = updateBoardSharing(cloudBoard, {
+        visibility: 'specific',
+        allowedFriends: friendIds,
+      })
+
+      expect(updatedBoard.sharing.visibility).toBe('specific')
+      expect(updatedBoard.sharing.allowedFriends).toEqual(friendIds)
+    })
+  })
+
+  describe('revokePublicLink', () => {
+    it('should generate new publicLinkId', async () => {
+      const { toCloudBoard, updateBoardSharing, revokePublicLink } = await import('./firestoreBoards')
+
+      let cloudBoard = toCloudBoard(mockBoard, mockUserId)
+      cloudBoard = updateBoardSharing(cloudBoard, {
+        visibility: 'public',
+        publicLinkEnabled: true,
+      })
+      const originalLinkId = cloudBoard.sharing.publicLinkId
+
+      const revokedBoard = revokePublicLink(cloudBoard)
+
+      expect(revokedBoard.sharing.publicLinkId).toBeDefined()
+      expect(revokedBoard.sharing.publicLinkId).not.toBe(originalLinkId)
+      expect(revokedBoard.sharing.publicLinkEnabled).toBe(true) // Still enabled
+    })
+
+    it('should do nothing if publicLinkEnabled is false', async () => {
+      const { toCloudBoard, revokePublicLink } = await import('./firestoreBoards')
+
+      const cloudBoard = toCloudBoard(mockBoard, mockUserId)
+
+      const revokedBoard = revokePublicLink(cloudBoard)
+
+      expect(revokedBoard.sharing.publicLinkId).toBeUndefined()
+      expect(revokedBoard.sharing.publicLinkEnabled).toBe(false)
+    })
+  })
+
+  describe('canUserViewBoard', () => {
+    it('should return true for board owner', async () => {
+      const { toCloudBoard, canUserViewBoard } = await import('./firestoreBoards')
+
+      const cloudBoard = toCloudBoard(mockBoard, mockUserId)
+
+      expect(canUserViewBoard(cloudBoard, mockUserId, [])).toBe(true)
+    })
+
+    it('should return false for private board not owned by user', async () => {
+      const { toCloudBoard, canUserViewBoard } = await import('./firestoreBoards')
+
+      const cloudBoard = toCloudBoard(mockBoard, 'other-owner')
+
+      expect(canUserViewBoard(cloudBoard, mockUserId, [])).toBe(false)
+    })
+
+    it('should return true for public board', async () => {
+      const { toCloudBoard, updateBoardSharing, canUserViewBoard } = await import('./firestoreBoards')
+
+      let cloudBoard = toCloudBoard(mockBoard, 'other-owner')
+      cloudBoard = updateBoardSharing(cloudBoard, { visibility: 'public' })
+
+      expect(canUserViewBoard(cloudBoard, mockUserId, [])).toBe(true)
+    })
+
+    it('should return true for friends visibility when user is a friend', async () => {
+      const { toCloudBoard, updateBoardSharing, canUserViewBoard } = await import('./firestoreBoards')
+
+      const ownerId = 'other-owner'
+      let cloudBoard = toCloudBoard(mockBoard, ownerId)
+      cloudBoard = updateBoardSharing(cloudBoard, { visibility: 'friends' })
+
+      // User is friends with the owner
+      const friendIds = [ownerId]
+
+      expect(canUserViewBoard(cloudBoard, mockUserId, friendIds)).toBe(true)
+    })
+
+    it('should return false for friends visibility when user is not a friend', async () => {
+      const { toCloudBoard, updateBoardSharing, canUserViewBoard } = await import('./firestoreBoards')
+
+      let cloudBoard = toCloudBoard(mockBoard, 'other-owner')
+      cloudBoard = updateBoardSharing(cloudBoard, { visibility: 'friends' })
+
+      // User has no friends
+      expect(canUserViewBoard(cloudBoard, mockUserId, [])).toBe(false)
+    })
+
+    it('should return true for specific visibility when user is in allowedFriends', async () => {
+      const { toCloudBoard, updateBoardSharing, canUserViewBoard } = await import('./firestoreBoards')
+
+      let cloudBoard = toCloudBoard(mockBoard, 'other-owner')
+      cloudBoard = updateBoardSharing(cloudBoard, {
+        visibility: 'specific',
+        allowedFriends: [mockUserId, 'friend-2'],
+      })
+
+      expect(canUserViewBoard(cloudBoard, mockUserId, [])).toBe(true)
+    })
+
+    it('should return false for specific visibility when user is not in allowedFriends', async () => {
+      const { toCloudBoard, updateBoardSharing, canUserViewBoard } = await import('./firestoreBoards')
+
+      let cloudBoard = toCloudBoard(mockBoard, 'other-owner')
+      cloudBoard = updateBoardSharing(cloudBoard, {
+        visibility: 'specific',
+        allowedFriends: ['friend-1', 'friend-2'],
+      })
+
+      expect(canUserViewBoard(cloudBoard, mockUserId, [])).toBe(false)
+    })
+  })
 })
