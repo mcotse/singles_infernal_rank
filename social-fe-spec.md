@@ -488,12 +488,26 @@ match /friendships/{friendshipId} {
 - **Username rules:** 3-20 chars, alphanumeric + underscore, no consecutive underscores, reserved names blocked
 - **Sync behavior:** On first sign-in, users are prompted to sync local boards to cloud. Local always wins conflicts.
 
-### Phase 2: Friends System
-- [ ] Friend requests (send/accept/decline)
-- [ ] Username search
-- [ ] Invite links
-- [ ] Friends list UI
-- [ ] Privacy settings (searchable toggle)
+### Phase 2: Friends System ✅ COMPLETE (Core)
+- [x] Friend requests (send/accept/decline)
+- [x] Username search
+- [x] Friends list UI
+- [ ] Invite links (deferred)
+- [ ] Privacy settings (searchable toggle) (deferred)
+
+#### Phase 2 Implementation Notes
+- **Files added:**
+  - `src/lib/firestoreFriendships.ts` - Friendship CRUD operations
+  - `src/lib/firestoreUsers.ts` - User profile queries
+  - `src/hooks/useFriends.ts` - Friends state management
+  - `src/components/FriendCard.tsx` - Friend display component
+  - `src/components/FriendRequestCard.tsx` - Request accept/decline UI
+  - `src/components/UserSearchSection.tsx` - Username search with debounce
+- **Features:**
+  - Send/accept/decline friend requests
+  - Search users by username (prefix match)
+  - View friends list with pending request badge
+  - Block users (removes friendship, prevents future requests)
 
 ### Phase 3: Board Sharing
 - [ ] Per-board visibility settings
