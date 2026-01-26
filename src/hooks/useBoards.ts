@@ -14,13 +14,20 @@ interface UseBoardsOptions {
   includeDeleted?: boolean
 }
 
+interface CreateBoardOptions {
+  /** Cover image key (from IndexedDB) */
+  coverImage?: string | null
+  /** Template ID if creating from a template */
+  templateId?: string
+}
+
 interface UseBoardsReturn {
   /** Active boards (excludes deleted unless includeDeleted is true) */
   boards: Board[]
   /** Soft-deleted boards awaiting permanent deletion */
   deletedBoards: Board[]
   /** Create a new board */
-  createBoard: (name: string, coverImage?: string | null) => Board
+  createBoard: (name: string, options?: CreateBoardOptions) => Board
   /** Update an existing board */
   updateBoard: (id: string, updates: Partial<Omit<Board, 'id' | 'createdAt'>>) => void
   /** Soft delete a board (can be restored) */
@@ -60,8 +67,8 @@ export const useBoards = (options: UseBoardsOptions = {}): UseBoardsReturn => {
     }
   }, [allBoards, includeDeleted])
 
-  const createBoardFn = useCallback((name: string, coverImage: string | null = null): Board => {
-    const board = createBoardEntity(name, coverImage)
+  const createBoardFn = useCallback((name: string, options?: CreateBoardOptions): Board => {
+    const board = createBoardEntity(name, options?.coverImage ?? null, options?.templateId)
     saveBoard(board)
     setAllBoards((prev) => [...prev, board])
     return board

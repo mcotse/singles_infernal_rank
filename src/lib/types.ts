@@ -14,6 +14,7 @@ export interface Board {
   id: string              // UUID
   name: string
   coverImage: string | null // IndexedDB key or null
+  templateId?: string     // Optional: links to BoardTemplate for comparison matching
   createdAt: number       // Unix timestamp (ms)
   updatedAt: number       // Unix timestamp (ms)
   deletedAt: number | null // Soft delete for trash (7-day recovery)
@@ -60,10 +61,15 @@ export interface StoredImage {
 /**
  * Create a new Board with defaults
  */
-export const createBoard = (name: string, coverImage: string | null = null): Board => ({
+export const createBoard = (
+  name: string,
+  coverImage: string | null = null,
+  templateId?: string
+): Board => ({
   id: crypto.randomUUID(),
   name,
   coverImage,
+  ...(templateId && { templateId }),
   createdAt: Date.now(),
   updatedAt: Date.now(),
   deletedAt: null,
