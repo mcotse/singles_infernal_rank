@@ -9,7 +9,6 @@
  * - "Not ranked" indicators for items only in one board
  */
 
-import { useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { wobbly } from '../styles/wobbly'
 import { springConfig } from '../styles/tokens'

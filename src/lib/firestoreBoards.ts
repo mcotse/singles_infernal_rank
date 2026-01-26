@@ -11,7 +11,7 @@
  */
 
 import type { Board } from './types'
-import type { BoardSharing, CloudBoardData } from './socialTypes'
+import type { BoardSharing } from './socialTypes'
 import { createBoardSharing } from './socialTypes'
 import { getFirebaseDb, USE_MOCK_AUTH } from './firebase'
 

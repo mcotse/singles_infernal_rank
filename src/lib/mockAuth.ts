@@ -14,7 +14,7 @@ import type { UserProfile } from './socialTypes'
 import type { Timestamp } from 'firebase/firestore'
 
 /** Create a mock Timestamp that matches Firebase's Timestamp interface */
-const createMockTimestamp = (ms: number): Timestamp => ({
+export const createMockTimestamp = (ms: number): Timestamp => ({
   seconds: Math.floor(ms / 1000),
   nanoseconds: (ms % 1000) * 1e6,
   toDate: () => new Date(ms),

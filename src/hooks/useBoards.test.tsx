@@ -93,7 +93,7 @@ describe('useBoards', () => {
       const { result } = renderHook(() => useBoards())
 
       act(() => {
-        result.current.createBoard('Board With Cover', 'cover-key')
+        result.current.createBoard('Board With Cover', { coverImage: 'cover-key' })
       })
 
       await waitFor(() => {

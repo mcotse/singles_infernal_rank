@@ -5,7 +5,7 @@
  * Shows search results with add friend buttons.
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Input } from './ui/Input'
 import { wobbly } from '../styles/wobbly'

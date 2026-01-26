@@ -221,7 +221,7 @@ export const alignItemsForComparison = (
  * Hook for managing board comparisons
  */
 export const useComparison = (options: UseComparisonOptions): UseComparisonReturn => {
-  const { yourBoards, yourCards, friendBoards, friendNames } = options
+  const { yourBoards, friendBoards, friendNames } = options
 
   /**
    * Find all comparison matches
@@ -297,9 +297,9 @@ export const useComparison = (options: UseComparisonOptions): UseComparisonRetur
    */
   const calculateComparison = useCallback(
     (
-      yourBoard: Board,
+      _yourBoard: Board,
       yourBoardCards: Card[],
-      friendBoard: CloudBoard,
+      _friendBoard: CloudBoard,
       friendCards: Card[]
     ): ComparisonResult => {
       // Convert to ComparisonItems

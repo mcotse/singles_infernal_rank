@@ -5,8 +5,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderHook, act, waitFor } from '@testing-library/react'
-import { useBoardSync, type SyncStatus } from './useBoardSync'
+import { renderHook, act } from '@testing-library/react'
+import { useBoardSync } from './useBoardSync'
 import type { Board } from '../lib/types'
 
 // Mock the firestoreBoards module
@@ -23,7 +23,7 @@ vi.mock('../lib/firestoreBoards', () => ({
     updatedAt: cloudBoard.updatedAt,
     deletedAt: cloudBoard.deletedAt,
   })),
-  mergeBoardLists: vi.fn((local, cloud) => local),
+  mergeBoardLists: vi.fn((local) => local),
 }))
 
 // Mock storage

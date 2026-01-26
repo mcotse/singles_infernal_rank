@@ -5,7 +5,6 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import type { Friendship } from './socialTypes'
 
 // Mock Firebase modules
 vi.mock('firebase/firestore', () => ({

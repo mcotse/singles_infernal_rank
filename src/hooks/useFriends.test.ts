@@ -8,7 +8,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { useFriends } from './useFriends'
 import type { Friendship } from '../lib/socialTypes'
-import type { UserProfile } from '../lib/socialTypes'
 
 // Mock firestoreFriendships
 vi.mock('../lib/firestoreFriendships', () => ({
@@ -188,7 +187,7 @@ describe('useFriends', () => {
         { id: 'f2', users: ['user-abc', 'user-ghi'], status: 'pending', requestedBy: 'user-ghi', createdAt: { toMillis: () => Date.now() } as never },
       ]
 
-      vi.mocked(firestoreFriendships.getPendingRequests).mockImplementation(async (uid, direction) => {
+      vi.mocked(firestoreFriendships.getPendingRequests).mockImplementation(async (_uid, direction) => {
         return direction === 'incoming' ? mockRequests : []
       })
       vi.mocked(firestoreFriendships.getFriendships).mockResolvedValue([])

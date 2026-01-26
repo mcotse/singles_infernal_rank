@@ -7,7 +7,6 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { Board } from './types'
-import type { CloudBoardData } from './socialTypes'
 
 // Mock Firebase modules
 vi.mock('firebase/firestore', () => ({
@@ -113,7 +112,7 @@ describe('firestoreBoards', () => {
       const { toCloudBoard, fromCloudBoard } = await import('./firestoreBoards')
 
       const cloudBoard = toCloudBoard(mockBoard, mockUserId)
-      const localBoard = fromCloudBoard(cloudBoard) as Record<string, unknown>
+      const localBoard = fromCloudBoard(cloudBoard) as unknown as Record<string, unknown>
 
       expect(localBoard.ownerId).toBeUndefined()
       expect(localBoard.sharing).toBeUndefined()

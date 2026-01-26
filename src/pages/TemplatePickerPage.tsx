@@ -9,7 +9,7 @@
  * - Back button navigation
  */
 
-import { useState, useCallback } from 'react'
+import { useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTemplates } from '../hooks/useTemplates'
 import { TemplateCard } from '../components/TemplateCard'

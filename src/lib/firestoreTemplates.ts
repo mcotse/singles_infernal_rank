@@ -14,6 +14,7 @@
 import type { BoardTemplate, TemplateItem } from './socialTypes'
 import { isBoardTemplate } from './socialTypes'
 import { getFirebaseDb, USE_MOCK_AUTH } from './firebase'
+import { createMockTimestamp } from './mockAuth'
 
 // ============ Mock Data for Development ============
 
@@ -38,7 +39,7 @@ const MOCK_TEMPLATES: BoardTemplate[] = [
       { id: 'si5-8', name: 'Contestant 8' },
     ],
     isActive: true,
-    createdAt: { seconds: Date.now() / 1000, nanoseconds: 0 } as any,
+    createdAt: createMockTimestamp(Date.now()),
   },
   {
     id: 'singles-inferno-s4',
@@ -54,7 +55,7 @@ const MOCK_TEMPLATES: BoardTemplate[] = [
       { id: 'si4-6', name: 'Bae Ji-yeon' },
     ],
     isActive: true,
-    createdAt: { seconds: Date.now() / 1000, nanoseconds: 0 } as any,
+    createdAt: createMockTimestamp(Date.now()),
   },
   {
     id: 'physical-100-s3',
@@ -68,7 +69,7 @@ const MOCK_TEMPLATES: BoardTemplate[] = [
       { id: 'p100-4', name: 'Competitor 4' },
     ],
     isActive: true,
-    createdAt: { seconds: Date.now() / 1000, nanoseconds: 0 } as any,
+    createdAt: createMockTimestamp(Date.now()),
   },
 ]
 

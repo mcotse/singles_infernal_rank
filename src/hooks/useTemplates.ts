@@ -15,7 +15,6 @@ import type { BoardTemplate } from '../lib/socialTypes'
 import {
   getActiveTemplates,
   getTemplateCategories,
-  getTemplatesByCategory,
 } from '../lib/firestoreTemplates'
 
 /**
