@@ -4,16 +4,23 @@
  * Social features hub showing:
  * - Sign-in prompt when not authenticated
  * - Username setup modal for new users
+ * - Sync migration modal for first-time sync
  * - Friends list when signed in (placeholder for now)
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
+import { useBoards } from '../hooks/useBoards'
+import { useBoardSync } from '../hooks/useBoardSync'
 import { UsernameSetupModal } from '../components/modals/UsernameSetupModal'
+import { SyncMigrationModal } from '../components/modals/SyncMigrationModal'
 import { Button } from '../components/ui/Button'
 import { wobbly } from '../styles/wobbly'
 import { springConfig } from '../styles/tokens'
+
+// Key for tracking if user has seen/dismissed sync modal
+const SYNC_DISMISSED_KEY = 'singles-infernal-rank:sync-dismissed'
 
 export const FriendsPage = () => {
   const {
@@ -27,7 +34,51 @@ export const FriendsPage = () => {
     isMockAuth,
   } = useAuth()
 
+  const { boards, refresh: refreshBoards } = useBoards()
+  const {
+    status: syncStatus,
+    error: syncError,
+    lastSyncedAt,
+    isSyncing,
+    syncAll,
+    clearError: clearSyncError,
+  } = useBoardSync({ userId: user?.uid ?? null })
+
   const [isCreatingProfile, setIsCreatingProfile] = useState(false)
+  const [showSyncModal, setShowSyncModal] = useState(false)
+  const [syncDismissed, setSyncDismissed] = useState(() => {
+    return localStorage.getItem(SYNC_DISMISSED_KEY) === 'true'
+  })
+
+  // Check if we should show sync modal
+  // Show when: user is signed in, has profile, has local boards, never synced, and hasn't dismissed
+  const shouldShowSyncModal =
+    user !== null &&
+    profile !== null &&
+    !needsUsername &&
+    boards.length > 0 &&
+    lastSyncedAt === null &&
+    !syncDismissed &&
+    syncStatus !== 'synced'
+
+  // Update showSyncModal when conditions change
+  useEffect(() => {
+    setShowSyncModal(shouldShowSyncModal)
+  }, [shouldShowSyncModal])
+
+  // Handle sync action
+  const handleSync = useCallback(async () => {
+    await syncAll(boards)
+    setShowSyncModal(false)
+    refreshBoards()
+  }, [syncAll, boards, refreshBoards])
+
+  // Handle skip sync
+  const handleSkipSync = useCallback(() => {
+    localStorage.setItem(SYNC_DISMISSED_KEY, 'true')
+    setSyncDismissed(true)
+    setShowSyncModal(false)
+  }, [])
 
   // Handle username submission
   const handleUsernameSubmit = useCallback(
@@ -160,6 +211,16 @@ export const FriendsPage = () => {
         isLoading={isCreatingProfile}
         error={error}
         allowDismiss={false}
+      />
+
+      {/* Sync migration modal - shown after sign-in when user has local boards */}
+      <SyncMigrationModal
+        isOpen={showSyncModal && !needsUsername}
+        boards={boards}
+        onSync={handleSync}
+        onSkip={handleSkipSync}
+        isSyncing={isSyncing}
+        error={syncError}
       />
 
       {/* Friends header */}

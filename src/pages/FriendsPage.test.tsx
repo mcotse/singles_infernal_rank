@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { FriendsPage } from './FriendsPage'
+import type { Board } from '../lib/types'
 
 // Mock useAuth hook
 const mockSignIn = vi.fn()
@@ -19,6 +20,36 @@ vi.mock('../hooks/useAuth', () => ({
     createProfile: mockCreateProfile,
     clearError: vi.fn(),
     isMockAuth: true,
+  })),
+}))
+
+// Mock useBoards hook
+const mockBoards: Board[] = []
+vi.mock('../hooks/useBoards', () => ({
+  useBoards: vi.fn(() => ({
+    boards: mockBoards,
+    deletedBoards: [],
+    createBoard: vi.fn(),
+    updateBoard: vi.fn(),
+    softDeleteBoard: vi.fn(),
+    restoreBoard: vi.fn(),
+    permanentlyDeleteBoard: vi.fn(),
+    getBoard: vi.fn(),
+    refresh: vi.fn(),
+  })),
+}))
+
+// Mock useBoardSync hook
+const mockSyncAll = vi.fn().mockResolvedValue([])
+vi.mock('../hooks/useBoardSync', () => ({
+  useBoardSync: vi.fn(() => ({
+    status: 'idle' as const,
+    error: null,
+    lastSyncedAt: null,
+    isSyncing: false,
+    syncAll: mockSyncAll,
+    syncBoard: vi.fn(),
+    clearError: vi.fn(),
   })),
 }))
 
@@ -153,6 +184,171 @@ describe('FriendsPage', () => {
 
       expect(screen.getByText(/friends/i)).toBeInTheDocument()
       expect(screen.queryByRole('button', { name: /sign in with google/i })).not.toBeInTheDocument()
+    })
+  })
+
+  describe('sync migration flow', () => {
+    it('shows sync modal when user has local boards and just signed in', async () => {
+      const mockUser = { uid: 'test-uid', displayName: 'Test User', photoURL: null }
+      const mockProfile = {
+        uid: 'test-uid',
+        username: 'testuser',
+        displayName: 'Test User',
+        avatarUrl: '',
+        isSearchable: true,
+        blockedUsers: [],
+      }
+
+      // Mock boards exist
+      const { useBoards } = await import('../hooks/useBoards')
+      vi.mocked(useBoards).mockReturnValue({
+        boards: [
+          { id: 'board-1', name: 'Test Board', coverImage: null, createdAt: Date.now(), updatedAt: Date.now(), deletedAt: null },
+        ],
+        deletedBoards: [],
+        createBoard: vi.fn(),
+        updateBoard: vi.fn(),
+        softDeleteBoard: vi.fn(),
+        restoreBoard: vi.fn(),
+        permanentlyDeleteBoard: vi.fn(),
+        getBoard: vi.fn(),
+        refresh: vi.fn(),
+      })
+
+      // Mock useBoardSync with never synced
+      const { useBoardSync } = await import('../hooks/useBoardSync')
+      vi.mocked(useBoardSync).mockReturnValue({
+        status: 'idle',
+        error: null,
+        lastSyncedAt: null, // Never synced before
+        isSyncing: false,
+        syncAll: mockSyncAll,
+        syncBoard: vi.fn(),
+        clearError: vi.fn(),
+      })
+
+      const { useAuth } = await import('../hooks/useAuth')
+      vi.mocked(useAuth).mockReturnValue({
+        user: mockUser as never,
+        profile: mockProfile as never,
+        isLoading: false,
+        error: null,
+        needsUsername: false,
+        signIn: mockSignIn,
+        signOut: vi.fn(),
+        createProfile: mockCreateProfile,
+        clearError: vi.fn(),
+        isMockAuth: true,
+      })
+
+      render(<FriendsPage />)
+
+      // Should show sync modal
+      expect(screen.getByText(/sync your boards/i)).toBeInTheDocument()
+    })
+
+    it('does not show sync modal when user has no local boards', async () => {
+      const mockUser = { uid: 'test-uid', displayName: 'Test User', photoURL: null }
+      const mockProfile = {
+        uid: 'test-uid',
+        username: 'testuser',
+        displayName: 'Test User',
+        avatarUrl: '',
+        isSearchable: true,
+        blockedUsers: [],
+      }
+
+      // Mock no boards
+      const { useBoards } = await import('../hooks/useBoards')
+      vi.mocked(useBoards).mockReturnValue({
+        boards: [],
+        deletedBoards: [],
+        createBoard: vi.fn(),
+        updateBoard: vi.fn(),
+        softDeleteBoard: vi.fn(),
+        restoreBoard: vi.fn(),
+        permanentlyDeleteBoard: vi.fn(),
+        getBoard: vi.fn(),
+        refresh: vi.fn(),
+      })
+
+      const { useAuth } = await import('../hooks/useAuth')
+      vi.mocked(useAuth).mockReturnValue({
+        user: mockUser as never,
+        profile: mockProfile as never,
+        isLoading: false,
+        error: null,
+        needsUsername: false,
+        signIn: mockSignIn,
+        signOut: vi.fn(),
+        createProfile: mockCreateProfile,
+        clearError: vi.fn(),
+        isMockAuth: true,
+      })
+
+      render(<FriendsPage />)
+
+      // Should NOT show sync modal
+      expect(screen.queryByText(/sync your boards/i)).not.toBeInTheDocument()
+    })
+
+    it('does not show sync modal when already synced', async () => {
+      const mockUser = { uid: 'test-uid', displayName: 'Test User', photoURL: null }
+      const mockProfile = {
+        uid: 'test-uid',
+        username: 'testuser',
+        displayName: 'Test User',
+        avatarUrl: '',
+        isSearchable: true,
+        blockedUsers: [],
+      }
+
+      // Mock boards exist
+      const { useBoards } = await import('../hooks/useBoards')
+      vi.mocked(useBoards).mockReturnValue({
+        boards: [
+          { id: 'board-1', name: 'Test Board', coverImage: null, createdAt: Date.now(), updatedAt: Date.now(), deletedAt: null },
+        ],
+        deletedBoards: [],
+        createBoard: vi.fn(),
+        updateBoard: vi.fn(),
+        softDeleteBoard: vi.fn(),
+        restoreBoard: vi.fn(),
+        permanentlyDeleteBoard: vi.fn(),
+        getBoard: vi.fn(),
+        refresh: vi.fn(),
+      })
+
+      // Mock already synced
+      const { useBoardSync } = await import('../hooks/useBoardSync')
+      vi.mocked(useBoardSync).mockReturnValue({
+        status: 'synced',
+        error: null,
+        lastSyncedAt: Date.now(), // Already synced
+        isSyncing: false,
+        syncAll: mockSyncAll,
+        syncBoard: vi.fn(),
+        clearError: vi.fn(),
+      })
+
+      const { useAuth } = await import('../hooks/useAuth')
+      vi.mocked(useAuth).mockReturnValue({
+        user: mockUser as never,
+        profile: mockProfile as never,
+        isLoading: false,
+        error: null,
+        needsUsername: false,
+        signIn: mockSignIn,
+        signOut: vi.fn(),
+        createProfile: mockCreateProfile,
+        clearError: vi.fn(),
+        isMockAuth: true,
+      })
+
+      render(<FriendsPage />)
+
+      // Should NOT show sync modal (already synced)
+      expect(screen.queryByText(/sync your boards/i)).not.toBeInTheDocument()
     })
   })
 })
