@@ -2,17 +2,27 @@
   <!-- Background circle with wobbly edge -->
   <path d="M256 20 C380 15, 495 120, 492 256 C498 385, 390 498, 256 492 C125 498, 18 388, 20 256 C15 125, 130 18, 256 20Z" fill="#fdfbf7" stroke="#2d2d2d" stroke-width="16"/>
 
-  <!-- Rank badge #1 -->
-  <circle cx="256" cy="180" r="70" fill="#ff4d4d" stroke="#2d2d2d" stroke-width="10"/>
-  <text x="256" y="205" text-anchor="middle" fill="white" font-family="Arial Black" font-size="80" font-weight="bold">1</text>
+  <!-- Outer flame (orange) -->
+  <path d="M256 80
+    C280 140, 360 180, 370 280
+    C380 350, 340 420, 256 450
+    C172 420, 132 350, 142 280
+    C152 180, 232 140, 256 80Z"
+    fill="#ff6b35" stroke="#2d2d2d" stroke-width="8"/>
 
-  <!-- Three horizontal lines (list icon) with wobbly style -->
-  <path d="M130 290 Q135 285, 382 292 Q388 295, 380 300 Q375 305, 132 298 Q125 295, 130 290Z" fill="#2d2d2d"/>
-  <path d="M145 355 Q150 350, 367 357 Q373 360, 365 365 Q360 370, 147 363 Q140 360, 145 355Z" fill="#2d2d2d"/>
-  <path d="M160 420 Q165 415, 352 422 Q358 425, 350 430 Q345 435, 162 428 Q155 425, 160 420Z" fill="#2d2d2d"/>
+  <!-- Inner flame (red/accent) -->
+  <path d="M256 160
+    C270 200, 320 230, 325 300
+    C330 350, 300 400, 256 420
+    C212 400, 182 350, 187 300
+    C192 230, 242 200, 256 160Z"
+    fill="#ff4d4d" stroke="#2d2d2d" stroke-width="6"/>
 
-  <!-- Small rank dots -->
-  <circle cx="105" cy="295" r="15" fill="#2d2d2d"/>
-  <circle cx="120" cy="360" r="15" fill="#2d2d2d"/>
-  <circle cx="135" cy="425" r="15" fill="#2d2d2d"/>
+  <!-- Core flame (yellow/bright) -->
+  <path d="M256 250
+    C262 275, 290 290, 292 330
+    C294 360, 278 390, 256 400
+    C234 390, 218 360, 220 330
+    C222 290, 250 275, 256 250Z"
+    fill="#ffdd57" stroke="#2d2d2d" stroke-width="4"/>
 </svg>

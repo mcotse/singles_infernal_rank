@@ -579,7 +579,7 @@ export const SettingsPage = () => {
             className="text-[#9a958d] text-sm"
             style={{ fontFamily: "'Patrick Hand', cursive" }}
           >
-            Ranky v{__APP_VERSION__}
+            HotTakes v{__APP_VERSION__}
           </p>
           <p
             className="text-[#9a958d] text-xs mt-1"

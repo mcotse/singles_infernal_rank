@@ -41,7 +41,7 @@ const FirstLaunchLoader = ({ progress }: { progress: string }) => (
         className="text-3xl text-[#2d2d2d] mb-4"
         style={{ fontFamily: "'Kalam', cursive", fontWeight: 700 }}
       >
-        Ranky
+        HotTakes
       </h1>
       <div
         className="bg-white border-[3px] border-[#2d2d2d] p-4 mb-4 shadow-[4px_4px_0px_0px_#2d2d2d]"

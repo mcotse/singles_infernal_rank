@@ -25,7 +25,7 @@ export const RESERVED_USERNAMES = new Set([
   'moderator',
   'staff',
   // App-specific
-  'ranky',
+  'hottakes',
   'ranking',
   'rankings',
   'official',

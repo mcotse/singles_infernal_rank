@@ -156,7 +156,7 @@ describe('usernameValidation', () => {
       })
 
       it('rejects app-specific reserved names', () => {
-        const result = validateUsername('ranky')
+        const result = validateUsername('hottakes')
         expect(result.isValid).toBe(false)
         expect(result.error).toBe('This username is reserved')
       })
