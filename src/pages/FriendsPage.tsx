@@ -8,12 +8,13 @@
  * - Friends list when signed in (placeholder for now)
  */
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
 import { useBoards } from '../hooks/useBoards'
 import { useBoardSync } from '../hooks/useBoardSync'
 import { useFriends } from '../hooks/useFriends'
+import { useFriendBoards } from '../hooks/useFriendBoards'
 import { UsernameSetupModal } from '../components/modals/UsernameSetupModal'
 import { SyncMigrationModal } from '../components/modals/SyncMigrationModal'
 import { FriendCard } from '../components/FriendCard'
@@ -61,6 +62,18 @@ export const FriendsPage = () => {
     removeFriend,
     refresh: refreshFriends,
   } = useFriends({ userId: user?.uid ?? null })
+
+  // Get friend IDs for board fetching
+  const friendIds = useMemo(
+    () => friends.map((f) => f.profile.uid),
+    [friends]
+  )
+
+  // Friend boards data
+  const { sharedBoardCounts } = useFriendBoards({
+    userId: user?.uid ?? null,
+    friendIds,
+  })
 
   const [isCreatingProfile, setIsCreatingProfile] = useState(false)
   const [showSyncModal, setShowSyncModal] = useState(false)
@@ -402,6 +415,7 @@ export const FriendsPage = () => {
                 displayName={friendProfile.displayName}
                 username={friendProfile.username}
                 avatarUrl={friendProfile.avatarUrl}
+                sharedBoardCount={sharedBoardCounts[friendProfile.uid]}
                 onClick={handleViewFriend}
               />
             </motion.div>

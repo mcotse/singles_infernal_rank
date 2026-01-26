@@ -53,6 +53,17 @@ vi.mock('../hooks/useBoardSync', () => ({
   })),
 }))
 
+// Mock useFriendBoards hook
+vi.mock('../hooks/useFriendBoards', () => ({
+  useFriendBoards: vi.fn(() => ({
+    friendBoards: {},
+    sharedBoardCounts: {},
+    isLoading: false,
+    error: null,
+    refresh: vi.fn(),
+  })),
+}))
+
 describe('FriendsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
