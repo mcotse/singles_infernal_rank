@@ -51,7 +51,8 @@ export const useFriendBoards = (options: UseFriendBoardsOptions): UseFriendBoard
   const [error, setError] = useState<string | null>(null)
 
   // Use a stable reference for friendIds to avoid infinite loops
-  const friendIdsKey = friendIds.sort().join(',')
+  // Create sorted copy to avoid mutating the input array
+  const friendIdsKey = [...friendIds].sort().join(',')
   const friendIdsRef = useRef(friendIds)
   friendIdsRef.current = friendIds
 
