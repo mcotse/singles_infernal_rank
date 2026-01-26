@@ -5,7 +5,8 @@
  * - Sign-in prompt when not authenticated
  * - Username setup modal for new users
  * - Sync migration modal for first-time sync
- * - Friends list when signed in (placeholder for now)
+ * - Templates section for creating boards
+ * - Friends list with navigation to profiles
  */
 
 import { useState, useCallback, useEffect, useMemo } from 'react'
@@ -15,17 +16,29 @@ import { useBoards } from '../hooks/useBoards'
 import { useBoardSync } from '../hooks/useBoardSync'
 import { useFriends } from '../hooks/useFriends'
 import { useFriendBoards } from '../hooks/useFriendBoards'
+import { useTemplates } from '../hooks/useTemplates'
 import { UsernameSetupModal } from '../components/modals/UsernameSetupModal'
 import { SyncMigrationModal } from '../components/modals/SyncMigrationModal'
 import { FriendCard } from '../components/FriendCard'
 import { FriendRequestCard } from '../components/FriendRequestCard'
 import { UserSearchSection } from '../components/UserSearchSection'
+import { TemplateCard } from '../components/TemplateCard'
 import { Button } from '../components/ui/Button'
+import { FriendProfilePage } from './FriendProfilePage'
+import { TemplatePickerPage } from './TemplatePickerPage'
+import { createBoardFromTemplate } from '../lib/firestoreTemplates'
+import type { BoardTemplate } from '../lib/socialTypes'
 import { wobbly } from '../styles/wobbly'
 import { springConfig } from '../styles/tokens'
 
 // Key for tracking if user has seen/dismissed sync modal
 const SYNC_DISMISSED_KEY = 'singles-infernal-rank:sync-dismissed'
+
+// Navigation state types
+type SubPage =
+  | { type: 'main' }
+  | { type: 'friend-profile'; friendId: string }
+  | { type: 'templates' }
 
 export const FriendsPage = () => {
   const {
@@ -46,7 +59,6 @@ export const FriendsPage = () => {
     lastSyncedAt,
     isSyncing,
     syncAll,
-    clearError: clearSyncError,
   } = useBoardSync({ userId: user?.uid ?? null })
 
   // Friends data
@@ -60,8 +72,11 @@ export const FriendsPage = () => {
     acceptRequest,
     declineRequest,
     removeFriend,
-    refresh: refreshFriends,
+    blockFriend,
   } = useFriends({ userId: user?.uid ?? null })
+
+  // Templates data
+  const { templates } = useTemplates()
 
   // Get friend IDs for board fetching
   const friendIds = useMemo(
@@ -74,6 +89,9 @@ export const FriendsPage = () => {
     userId: user?.uid ?? null,
     friendIds,
   })
+
+  // Navigation state
+  const [subPage, setSubPage] = useState<SubPage>({ type: 'main' })
 
   const [isCreatingProfile, setIsCreatingProfile] = useState(false)
   const [showSyncModal, setShowSyncModal] = useState(false)
@@ -142,10 +160,37 @@ export const FriendsPage = () => {
     [declineRequest]
   )
 
-  // Handle view friend profile (placeholder for now)
+  // Handle view friend profile
   const handleViewFriend = useCallback((uid: string) => {
-    // TODO: Navigate to friend profile page
-    console.log('View friend:', uid)
+    setSubPage({ type: 'friend-profile', friendId: uid })
+  }, [])
+
+  // Handle back to main
+  const handleBackToMain = useCallback(() => {
+    setSubPage({ type: 'main' })
+  }, [])
+
+  // Handle view all templates
+  const handleViewTemplates = useCallback(() => {
+    setSubPage({ type: 'templates' })
+  }, [])
+
+  // Handle template selection
+  const handleSelectTemplate = useCallback(
+    (template: BoardTemplate) => {
+      // Create board from template
+      createBoardFromTemplate(template)
+      refreshBoards()
+      // Navigate back to main (or could navigate to the new board)
+      setSubPage({ type: 'main' })
+    },
+    [refreshBoards]
+  )
+
+  // Handle viewing a friend's board (placeholder - would navigate to board detail)
+  const handleViewBoard = useCallback((boardId: string) => {
+    console.log('View board:', boardId)
+    // TODO: Navigate to board detail page
   }, [])
 
   // Render sign-in prompt for unauthenticated users
@@ -258,7 +303,31 @@ export const FriendsPage = () => {
     )
   }
 
-  // Render friends content for authenticated users
+  // Render subpages
+  if (subPage.type === 'friend-profile') {
+    return (
+      <FriendProfilePage
+        friendId={subPage.friendId}
+        currentUserId={user.uid}
+        friendIds={friendIds}
+        onBack={handleBackToMain}
+        onViewBoard={handleViewBoard}
+        onUnfriend={removeFriend}
+        onBlock={blockFriend}
+      />
+    )
+  }
+
+  if (subPage.type === 'templates') {
+    return (
+      <TemplatePickerPage
+        onBack={handleBackToMain}
+        onSelectTemplate={handleSelectTemplate}
+      />
+    )
+  }
+
+  // Render main friends content for authenticated users
   return (
     <div className="p-4">
       {/* Username setup modal - cannot be dismissed until username is set */}
@@ -319,6 +388,55 @@ export const FriendsPage = () => {
           )}
         </div>
       </div>
+
+      {/* Templates Section */}
+      {templates.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2
+              className="text-lg text-[#2d2d2d]"
+              style={{
+                fontFamily: "'Kalam', cursive",
+                fontWeight: 600,
+              }}
+            >
+              Templates
+            </h2>
+            <button
+              type="button"
+              onClick={handleViewTemplates}
+              className="
+                text-sm text-[#2d5da1]
+                hover:text-[#2d5da1]/80
+                transition-colors
+              "
+              style={{ fontFamily: "'Patrick Hand', cursive" }}
+            >
+              View all →
+            </button>
+          </div>
+
+          {/* Horizontal scrollable templates */}
+          <div className="overflow-x-auto -mx-4 px-4 pb-2">
+            <div className="flex gap-3" style={{ minWidth: 'min-content' }}>
+              {templates.slice(0, 3).map((template) => (
+                <motion.div
+                  key={template.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={springConfig.default}
+                  className="w-[280px] flex-shrink-0"
+                >
+                  <TemplateCard
+                    template={template}
+                    onClick={handleSelectTemplate}
+                  />
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Pending Requests Section */}
       <AnimatePresence>
