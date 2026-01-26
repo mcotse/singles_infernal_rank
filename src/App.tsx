@@ -4,6 +4,7 @@ import { Agentation } from 'agentation'
 import { TabBar, type Tab } from './components/ui/TabBar'
 import { BoardsPage } from './pages/BoardsPage'
 import { BoardDetailPage } from './pages/BoardDetailPage'
+import { FriendsPage } from './pages/FriendsPage'
 import { HistoryPage } from './pages/HistoryPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { getBoards } from './lib/storage'
@@ -12,6 +13,7 @@ import { wobbly } from './styles/wobbly'
 
 const tabs: Tab[] = [
   { id: 'boards', label: 'Boards', icon: '📋' },
+  { id: 'friends', label: 'Friends', icon: '👥' },
   { id: 'history', label: 'History', icon: '📊' },
   { id: 'settings', label: 'Settings', icon: '⚙️' },
 ]
@@ -148,6 +150,7 @@ export const App = () => {
       <div className="flex-1 w-full max-w-[500px] mx-auto">
         <main className="pb-20">
           {activeTab === 'boards' && renderBoardsContent()}
+          {activeTab === 'friends' && <FriendsPage />}
           {activeTab === 'history' && <HistoryPage />}
           {activeTab === 'settings' && <SettingsPage />}
         </main>

@@ -1,7 +1,7 @@
 # Social Features Specification
 
-> **Status:** Draft
-> **Version:** 0.1.0
+> **Status:** Phase 1 Complete
+> **Version:** 0.2.0
 > **Last Updated:** 2026-01-25
 
 ## Overview
@@ -462,11 +462,27 @@ match /friendships/{friendshipId} {
 
 ## Implementation Phases
 
-### Phase 1: Foundation
-- [ ] Firebase project setup
-- [ ] Authentication (Google Sign-In)
-- [ ] User profile creation
-- [ ] Basic data sync (boards to cloud)
+### Phase 1: Foundation ✅ COMPLETE
+- [x] Firebase project setup (lazy initialization for bundle size)
+- [x] Authentication (Google Sign-In)
+- [x] Mock auth for local development (no Firebase needed)
+- [x] User profile creation with username validation
+- [x] Username uniqueness enforcement
+- [x] Reserved usernames protection (admin, root, support, etc.)
+- [ ] Basic data sync (boards to cloud) - **NEXT**
+
+#### Phase 1 Implementation Notes
+- **Files added:**
+  - `src/lib/firebase.ts` - Lazy Firebase initialization
+  - `src/lib/mockAuth.ts` - Mock auth for dev mode
+  - `src/lib/socialTypes.ts` - TypeScript types for social features
+  - `src/lib/usernameValidation.ts` - Username rules and validation
+  - `src/hooks/useAuth.ts` - Authentication hook
+  - `src/components/modals/UsernameSetupModal.tsx` - First-time username entry
+  - `src/pages/FriendsPage.tsx` - Friends tab with sign-in flow
+  - `src/pages/SettingsPage.tsx` - Updated with Account section
+- **Dev mode:** Set `VITE_USE_MOCK_AUTH=true` (default in dev) to bypass Firebase
+- **Username rules:** 3-20 chars, alphanumeric + underscore, no consecutive underscores, reserved names blocked
 
 ### Phase 2: Friends System
 - [ ] Friend requests (send/accept/decline)
