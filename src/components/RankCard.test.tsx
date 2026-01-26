@@ -122,5 +122,12 @@ describe('RankCard', () => {
       const card = screen.getByTestId('rank-card')
       expect(card.className).toContain('shadow')
     })
+
+    it('title text has adequate line-height to prevent clipping', () => {
+      render(<RankCard {...defaultProps} />)
+      const title = screen.getByRole('heading', { level: 3 })
+      // leading-tight (1.25) clips Patrick Hand font ascenders; should not be present
+      expect(title.className).not.toContain('leading-tight')
+    })
   })
 })

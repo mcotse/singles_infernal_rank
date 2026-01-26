@@ -298,7 +298,7 @@ export const RankCard = ({
           {/* Name and Notes */}
           <div className="flex-1 min-w-0 py-1">
             <h3
-              className="text-[#2d2d2d] text-lg leading-tight truncate"
+              className="text-[#2d2d2d] text-lg truncate"
               style={{
                 fontFamily: "'Patrick Hand', cursive",
               }}
