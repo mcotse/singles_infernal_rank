@@ -24,8 +24,12 @@ import type { Auth } from 'firebase/auth'
 import type { Firestore } from 'firebase/firestore'
 import type { FirebaseStorage } from 'firebase/storage'
 
-// Check if we should use mock auth (dev mode or explicit flag)
-export const USE_MOCK_AUTH = import.meta.env.DEV || import.meta.env.VITE_USE_MOCK_AUTH === 'true'
+// Check if we should use mock auth
+// - In dev: defaults to true unless VITE_USE_MOCK_AUTH=false
+// - In prod: defaults to false unless VITE_USE_MOCK_AUTH=true
+export const USE_MOCK_AUTH = import.meta.env.VITE_USE_MOCK_AUTH === 'false'
+  ? false
+  : import.meta.env.DEV || import.meta.env.VITE_USE_MOCK_AUTH === 'true'
 
 // Firebase config from environment variables
 // Create .env.local with these values from Firebase console:
