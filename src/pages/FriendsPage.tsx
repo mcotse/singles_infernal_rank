@@ -119,8 +119,13 @@ export const FriendsPage = () => {
   // Handle sync action
   const handleSync = useCallback(async () => {
     await syncAll(boards)
-    setShowSyncModal(false)
     refreshBoards()
+    // Only close modal if sync actually persisted (lastSyncedAt was set)
+    // syncAll returns localBoards without setting lastSyncedAt on failure or no-op
+    const synced = localStorage.getItem('singles-infernal-rank:last-synced-at')
+    if (synced) {
+      setShowSyncModal(false)
+    }
   }, [syncAll, boards, refreshBoards])
 
   // Handle skip sync

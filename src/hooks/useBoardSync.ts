@@ -15,7 +15,7 @@
  * - Individual sync on board updates
  */
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import type { Board } from '../lib/types'
 import {
   fullBoardSync,
@@ -64,6 +64,13 @@ export interface UseBoardSyncReturn {
 export const useBoardSync = (options: UseBoardSyncOptions): UseBoardSyncReturn => {
   const { userId } = options
 
+  // Use a ref to always have the latest userId in callbacks
+  // This prevents stale closure bugs where syncAll captures a null userId
+  const userIdRef = useRef(userId)
+  useEffect(() => {
+    userIdRef.current = userId
+  }, [userId])
+
   const LAST_SYNCED_KEY = 'singles-infernal-rank:last-synced-at'
 
   const [status, setStatus] = useState<SyncStatus>('idle')
@@ -86,8 +93,11 @@ export const useBoardSync = (options: UseBoardSyncOptions): UseBoardSyncReturn =
    */
   const syncAll = useCallback(
     async (localBoards: Board[]): Promise<Board[]> => {
+      // Read latest userId from ref to avoid stale closures
+      const currentUserId = userIdRef.current
       // No-op if not signed in
-      if (!userId) {
+      if (!currentUserId) {
+        console.warn('[useBoardSync] syncAll called with no userId, skipping')
         return localBoards
       }
 
@@ -95,18 +105,19 @@ export const useBoardSync = (options: UseBoardSyncOptions): UseBoardSyncReturn =
       setError(null)
 
       try {
-        const mergedBoards = await fullBoardSync(localBoards, userId)
+        const mergedBoards = await fullBoardSync(localBoards, currentUserId)
         setStatus('synced')
         setLastSyncedAt(Date.now())
         return mergedBoards
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Sync failed'
+        console.error('[useBoardSync] syncAll failed:', message, err)
         setStatus('error')
         setError(message)
         return localBoards // Return original on error
       }
     },
-    [userId, setLastSyncedAt]
+    [setLastSyncedAt]
   )
 
   /**
@@ -114,8 +125,9 @@ export const useBoardSync = (options: UseBoardSyncOptions): UseBoardSyncReturn =
    */
   const syncBoard = useCallback(
     async (board: Board): Promise<void> => {
+      const currentUserId = userIdRef.current
       // No-op if not signed in
-      if (!userId) {
+      if (!currentUserId) {
         return
       }
 
@@ -123,7 +135,7 @@ export const useBoardSync = (options: UseBoardSyncOptions): UseBoardSyncReturn =
       setError(null)
 
       try {
-        await syncBoardsToCloud([board], userId)
+        await syncBoardsToCloud([board], currentUserId)
         setStatus('synced')
         setLastSyncedAt(Date.now())
       } catch (err) {
@@ -132,7 +144,7 @@ export const useBoardSync = (options: UseBoardSyncOptions): UseBoardSyncReturn =
         setError(message)
       }
     },
-    [userId, setLastSyncedAt]
+    [setLastSyncedAt]
   )
 
   /**
