@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '../components/ui/Button'
 import { wobbly } from '../styles/wobbly'
@@ -8,6 +8,7 @@ import { loadSinglesInfernoS5, loadSinglesInfernoS5Snapshots } from '../data/sin
 import { clearAllImages } from '../lib/db'
 import { getDeviceToken } from '../lib/deviceToken'
 import { isAllowlisted } from '../lib/allowlist'
+import { getOrCreateDeviceAlias } from '../lib/firestoreDeviceAlias'
 
 type FeedbackType = 'success' | 'error' | 'warning' | null
 
@@ -205,6 +206,15 @@ export const SettingsPage = () => {
 
   const deviceToken = getDeviceToken()
   const allowlisted = isAllowlisted(deviceToken)
+  const [deviceAlias, setDeviceAlias] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    getOrCreateDeviceAlias(deviceToken)
+      .then((alias) => { if (!cancelled) setDeviceAlias(alias) })
+      .catch(() => { if (!cancelled) setDeviceAlias(null) })
+    return () => { cancelled = true }
+  }, [deviceToken])
 
   const showFeedback = (type: FeedbackType, message: string) => {
     setFeedback({ type, message })
@@ -374,21 +384,33 @@ export const SettingsPage = () => {
               className="text-[#9a958d] text-xs mb-1"
               style={{ fontFamily: "'Patrick Hand', cursive" }}
             >
-              Device Token
+              Device Alias
             </p>
             <p
-              className="text-[#2d2d2d] text-sm font-mono break-all"
+              className="text-[#2d2d2d] text-lg"
+              style={{ fontFamily: "'Kalam', cursive" }}
             >
-              {deviceToken}
+              {deviceAlias ?? '...'}
             </p>
             {allowlisted && (
               <p
-                className="text-[#22c55e] text-xs mt-2"
+                className="text-[#22c55e] text-xs mt-1"
                 style={{ fontFamily: "'Patrick Hand', cursive" }}
               >
                 Allowlisted (no limits)
               </p>
             )}
+            <details className="mt-2">
+              <summary
+                className="text-[#9a958d] text-xs cursor-pointer"
+                style={{ fontFamily: "'Patrick Hand', cursive" }}
+              >
+                Device Token
+              </summary>
+              <p className="text-[#9a958d] text-xs font-mono break-all mt-1">
+                {deviceToken}
+              </p>
+            </details>
           </div>
         </SettingsSection>
 
