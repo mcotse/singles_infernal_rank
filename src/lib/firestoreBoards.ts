@@ -33,13 +33,22 @@ export const toCloudBoard = (
   board: Board,
   ownerId: string,
   options?: { sharing?: BoardSharing; templateId?: string }
-): CloudBoard => ({
-  ...board,
-  ownerId,
-  sharing: options?.sharing ?? createBoardSharing(),
-  syncedAt: Date.now(),
-  templateId: options?.templateId,
-})
+): CloudBoard => {
+  const cloudBoard: CloudBoard = {
+    ...board,
+    ownerId,
+    sharing: options?.sharing ?? createBoardSharing(),
+    syncedAt: Date.now(),
+  }
+  // Firestore rejects undefined values - only set templateId if defined
+  const templateId = options?.templateId ?? board.templateId
+  if (templateId) {
+    cloudBoard.templateId = templateId
+  } else {
+    delete cloudBoard.templateId
+  }
+  return cloudBoard
+}
 
 /**
  * Convert a CloudBoard to local Board format

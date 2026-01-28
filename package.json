@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "bunx --bun vite",
+    "dev:staging": "bunx --bun vite --mode staging",
     "build": "bunx --bun tsc -b && bunx --bun vite build",
+    "build:staging": "bunx --bun tsc -b && bunx --bun vite build --mode staging",
     "lint": "bunx --bun eslint .",
     "preview": "bunx --bun vite preview",
+    "preview:staging": "bunx --bun vite preview --mode staging",
     "test:clean": "./scripts/kill-test-zombies.sh",
     "test": "./scripts/kill-test-zombies.sh; bunx --bun vitest",
     "test:run": "./scripts/kill-test-zombies.sh; bunx --bun vitest run",

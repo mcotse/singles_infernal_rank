@@ -26,6 +26,8 @@ dist-ssr
 # Beads
 test-results/
 .env.local
+.env.staging
+.env.production
 
 # E2E test screenshots
 e2e/screenshots/
