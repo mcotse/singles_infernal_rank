@@ -86,14 +86,13 @@ export const getActiveTemplates = async (): Promise<BoardTemplate[]> => {
   }
 
   const db = await getFirebaseDb()
-  const { collection, query, where, getDocs, orderBy } = await import(
+  const { collection, query, where, getDocs } = await import(
     'firebase/firestore'
   )
 
   const q = query(
     collection(db, 'templates'),
-    where('isActive', '==', true),
-    orderBy('name')
+    where('isActive', '==', true)
   )
   const snapshot = await getDocs(q)
 
@@ -105,7 +104,7 @@ export const getActiveTemplates = async (): Promise<BoardTemplate[]> => {
     }
   })
 
-  return templates
+  return templates.sort((a, b) => a.name.localeCompare(b.name))
 }
 
 /**
@@ -145,15 +144,14 @@ export const getTemplatesByCategory = async (
   }
 
   const db = await getFirebaseDb()
-  const { collection, query, where, getDocs, orderBy } = await import(
+  const { collection, query, where, getDocs } = await import(
     'firebase/firestore'
   )
 
   const q = query(
     collection(db, 'templates'),
     where('isActive', '==', true),
-    where('category', '==', category),
-    orderBy('name')
+    where('category', '==', category)
   )
   const snapshot = await getDocs(q)
 
@@ -165,7 +163,7 @@ export const getTemplatesByCategory = async (
     }
   })
 
-  return templates
+  return templates.sort((a, b) => a.name.localeCompare(b.name))
 }
 
 /**
