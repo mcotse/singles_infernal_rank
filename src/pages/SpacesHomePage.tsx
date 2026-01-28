@@ -18,8 +18,8 @@ interface SpacesHomePageProps {
   isLoading: boolean
   error: string | null
   canCreateSpace: boolean
-  onCreateSpace: (spaceName: string, displayName: string) => Promise<void>
-  onJoinSpace: (joinCode: string, displayName: string) => Promise<void>
+  onCreateSpace: (spaceName: string, displayName: string) => Promise<boolean>
+  onJoinSpace: (joinCode: string, displayName: string) => Promise<boolean>
   onSelectSpace: (spaceId: string) => void
   prefillJoinCode?: string
   clearError: () => void
@@ -126,15 +126,15 @@ export const SpacesHomePage = ({
   const [showJoinModal, setShowJoinModal] = useState(!!prefillJoinCode)
 
   const handleCreate = async (spaceName: string, displayName: string) => {
-    await onCreateSpace(spaceName, displayName)
-    if (!error) {
+    const success = await onCreateSpace(spaceName, displayName)
+    if (success) {
       setShowCreateModal(false)
     }
   }
 
   const handleJoin = async (joinCode: string, displayName: string) => {
-    await onJoinSpace(joinCode, displayName)
-    if (!error) {
+    const success = await onJoinSpace(joinCode, displayName)
+    if (success) {
       setShowJoinModal(false)
     }
   }

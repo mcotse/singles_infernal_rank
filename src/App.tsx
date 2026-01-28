@@ -161,18 +161,22 @@ export const App = () => {
     setSelectedSpaceId(null)
   }
 
-  const handleCreateSpace = async (spaceName: string, displayName: string) => {
+  const handleCreateSpace = async (spaceName: string, displayName: string): Promise<boolean> => {
     const result = await createSpace(spaceName, displayName)
     if (result) {
       setSelectedSpaceId(result.spaceId)
+      return true
     }
+    return false
   }
 
-  const handleJoinSpace = async (joinCode: string, displayName: string) => {
+  const handleJoinSpace = async (joinCode: string, displayName: string): Promise<boolean> => {
     const result = await joinSpace(joinCode, displayName)
     if (result) {
       setSelectedSpaceId(result.spaceId)
+      return true
     }
+    return false
   }
 
   // Render home tab content
