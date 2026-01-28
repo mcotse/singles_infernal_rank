@@ -151,6 +151,45 @@ export const isFirebaseInitialized = (): boolean => {
 }
 
 /**
+ * Initialize anonymous authentication silently.
+ * No UI shown — used for Firestore security rules.
+ * Returns the anonymous user's UID.
+ */
+export const initializeAnonymousAuth = async (): Promise<string> => {
+  const auth = await getFirebaseAuth()
+  const { signInAnonymously } = await import('firebase/auth')
+
+  // If already signed in anonymously, return existing UID
+  if (auth.currentUser) {
+    return auth.currentUser.uid
+  }
+
+  const result = await signInAnonymously(auth)
+  return result.user.uid
+}
+
+/**
+ * Get current anonymous UID if signed in, or null
+ */
+export const getAnonUid = async (): Promise<string | null> => {
+  if (USE_MOCK_AUTH) {
+    // In mock mode, use a stable fake UID from localStorage
+    const mockUid = localStorage.getItem('singles-infernal-rank:mock-anon-uid')
+    if (mockUid) return mockUid
+    const uid = crypto.randomUUID()
+    localStorage.setItem('singles-infernal-rank:mock-anon-uid', uid)
+    return uid
+  }
+
+  try {
+    const auth = await getFirebaseAuth()
+    return auth.currentUser?.uid ?? null
+  } catch {
+    return null
+  }
+}
+
+/**
  * Reset Firebase (for testing purposes)
  */
 export const resetFirebase = (): void => {
