@@ -86,6 +86,45 @@ export const getImage = async (key: string): Promise<StoredImage | null> => {
 }
 
 /**
+ * Get multiple images from IndexedDB in a single transaction (batch read)
+ * Much faster than calling getImage() multiple times
+ */
+export const getImages = async (keys: string[]): Promise<Map<string, StoredImage>> => {
+  if (keys.length === 0) {
+    return new Map()
+  }
+
+  const db = await openDB()
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, 'readonly')
+    const store = transaction.objectStore(STORE_NAME)
+    const results = new Map<string, StoredImage>()
+
+    // Use transaction events instead of manual counting to avoid race conditions
+    transaction.oncomplete = () => {
+      resolve(results)
+    }
+
+    transaction.onerror = () => {
+      reject(new Error(`Failed to get images: ${transaction.error?.message}`))
+    }
+
+    // Request all images in parallel within single transaction
+    for (const key of keys) {
+      const request = store.get(key)
+
+      request.onsuccess = () => {
+        if (request.result) {
+          results.set(key, request.result)
+        }
+      }
+      // Individual request errors bubble up to transaction.onerror
+    }
+  })
+}
+
+/**
  * Delete an image from IndexedDB
  */
 export const deleteImage = async (key: string): Promise<void> => {
