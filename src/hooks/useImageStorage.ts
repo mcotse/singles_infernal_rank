@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback } from 'react'
-import { saveImage as dbSaveImage, getImage as dbGetImage, deleteImage as dbDeleteImage } from '../lib/db'
+import { saveImage as dbSaveImage, getImage as dbGetImage, getImages as dbGetImages, deleteImage as dbDeleteImage } from '../lib/db'
 import { processImage, createImageUrl, revokeImageUrl } from '../lib/imageUtils'
 import type { StoredImage } from '../lib/types'
 
@@ -21,6 +21,8 @@ interface UseImageStorageReturn {
   getImageUrl: (key: string) => Promise<string | null>
   /** Get blob URL for thumbnail */
   getThumbnailUrl: (key: string) => Promise<string | null>
+  /** Get blob URLs for multiple thumbnails in a single batch (much faster) */
+  getThumbnailUrls: (keys: string[]) => Promise<Map<string, string>>
   /** Delete an image by key */
   deleteImage: (key: string) => Promise<void>
   /** Revoke a blob URL to free memory */
@@ -83,6 +85,21 @@ export const useImageStorage = (): UseImageStorageReturn => {
     return createImageUrl(image.thumbnail)
   }, [])
 
+  const getThumbnailUrls = useCallback(async (keys: string[]): Promise<Map<string, string>> => {
+    if (keys.length === 0) {
+      return new Map()
+    }
+
+    const images = await dbGetImages(keys)
+    const urls = new Map<string, string>()
+
+    for (const [key, image] of images) {
+      urls.set(key, createImageUrl(image.thumbnail))
+    }
+
+    return urls
+  }, [])
+
   const deleteImageFn = useCallback(async (key: string): Promise<void> => {
     await dbDeleteImage(key)
   }, [])
@@ -97,6 +114,7 @@ export const useImageStorage = (): UseImageStorageReturn => {
     getImage: getImageFn,
     getImageUrl,
     getThumbnailUrl,
+    getThumbnailUrls,
     deleteImage: deleteImageFn,
     revokeUrl,
   }

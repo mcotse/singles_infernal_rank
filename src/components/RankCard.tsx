@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { wobbly } from '../styles/wobbly'
 import { colors } from '../styles/tokens'
 import { DragHandle } from './DragHandle'
+import { PhotoSkeleton } from './ui/PhotoSkeleton'
 import { getDisplayName } from '../hooks/useDisplayName'
 
 export interface RankCardProps {
@@ -22,6 +23,8 @@ export interface RankCardProps {
   isDragging?: boolean
   /** Whether to display nickname instead of real name */
   useNickname?: boolean
+  /** Whether the thumbnail is still loading */
+  isLoading?: boolean
   /** Called when the card body (not handle) is tapped */
   onTap?: (id: string) => void
 }
@@ -239,6 +242,7 @@ export const RankCard = ({
   notes,
   isDragging = false,
   useNickname = false,
+  isLoading = false,
   onTap,
 }: RankCardProps) => {
   const displayName = getDisplayName({ name, nickname }, useNickname)
@@ -289,7 +293,9 @@ export const RankCard = ({
           "
         >
           {/* Photo */}
-          {thumbnailUrl ? (
+          {isLoading ? (
+            <PhotoSkeleton size={56} />
+          ) : thumbnailUrl ? (
             <ExpandablePhoto url={thumbnailUrl} alt={displayName} />
           ) : (
             <PhotoPlaceholder />

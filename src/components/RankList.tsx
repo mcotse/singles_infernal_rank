@@ -12,6 +12,8 @@ export interface RankListProps {
   cards: Card[]
   /** Map of card ID to thumbnail URL */
   thumbnailUrls?: Record<string, string>
+  /** Set of card IDs that are still loading thumbnails */
+  loadingCardIds?: Set<string>
   /** Called when cards are reordered */
   onReorder: (fromIndex: number, toIndex: number) => void
   /** Called when a card is tapped */
@@ -47,12 +49,14 @@ const DraggableCard = ({
   rank,
   thumbnailUrl,
   useNickname,
+  isLoading,
   onTap,
 }: {
   card: Card
   rank: number
   thumbnailUrl?: string
   useNickname: boolean
+  isLoading: boolean
   onTap: (id: string) => void
 }) => {
   const [isDragging, setIsDragging] = useState(false)
@@ -190,6 +194,7 @@ const DraggableCard = ({
           notes={card.notes}
           isDragging={isDragging || isLongPressing}
           useNickname={useNickname}
+          isLoading={isLoading}
           onTap={onTap}
         />
       </div>
@@ -214,6 +219,7 @@ const DraggableCard = ({
 export const RankList = ({
   cards,
   thumbnailUrls = {},
+  loadingCardIds = new Set(),
   onReorder,
   onCardTap,
 }: RankListProps) => {
@@ -306,6 +312,7 @@ export const RankList = ({
             rank={index + 1}
             thumbnailUrl={thumbnailUrls[card.id]}
             useNickname={useNickname}
+            isLoading={loadingCardIds.has(card.id)}
             onTap={onCardTap}
           />
         ))}
