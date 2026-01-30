@@ -108,6 +108,7 @@ describe.skip('BoardDetailPage', () => {
     getImage: vi.fn().mockResolvedValue(null),
     getImageUrl: vi.fn().mockResolvedValue(null),
     getThumbnailUrl: vi.fn().mockResolvedValue(null),
+    getThumbnailUrls: vi.fn().mockResolvedValue(new Map()),
     deleteImage: vi.fn().mockResolvedValue(undefined),
     revokeUrl: vi.fn(),
   }
