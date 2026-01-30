@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { BoardsPage } from './BoardsPage'
 import * as useBoardsModule from '../hooks/useBoards'
@@ -7,6 +7,15 @@ import * as useCardsModule from '../hooks/useCards'
 // Mock the hooks
 vi.mock('../hooks/useBoards')
 vi.mock('../hooks/useCards')
+
+// Mock useTemplateLoader to avoid async issues
+vi.mock('../hooks/useTemplateLoader', () => ({
+  useTemplateLoader: () => ({
+    isLoading: false,
+    progress: null,
+    loadTemplate: vi.fn().mockResolvedValue({ success: true, boardId: 'new-board-123', cardsCreated: 6, imagesCreated: 7, errors: [] }),
+  }),
+}))
 
 const mockUseBoards = vi.mocked(useBoardsModule.useBoards)
 const mockUseCards = vi.mocked(useCardsModule.useCards)
@@ -106,16 +115,20 @@ describe('BoardsPage', () => {
     })
   })
 
-  describe('create board', () => {
-    it('opens create modal when header create button clicked', () => {
+  describe('create board flow', () => {
+    it('opens template picker when header create button clicked', () => {
       render(<BoardsPage />)
 
       fireEvent.click(screen.getByRole('button', { name: /create new board/i }))
 
-      expect(screen.getByTestId('create-board-modal')).toBeInTheDocument()
+      // Template picker sheet should appear with template options
+      expect(screen.getByText('Create New Board')).toBeInTheDocument()
+      expect(screen.getByText('Singles Inferno S5 Girls')).toBeInTheDocument()
+      expect(screen.getByText('Singles Inferno S5 Boys')).toBeInTheDocument()
+      expect(screen.getByText('Create blank board')).toBeInTheDocument()
     })
 
-    it('opens create modal when empty state button clicked', () => {
+    it('opens template picker when empty state button clicked', () => {
       mockUseBoards.mockReturnValue({
         ...defaultBoardsHook,
         boards: [],
@@ -125,7 +138,23 @@ describe('BoardsPage', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /create your first/i }))
 
-      expect(screen.getByTestId('create-board-modal')).toBeInTheDocument()
+      // Template picker sheet should appear
+      expect(screen.getByText('Create New Board')).toBeInTheDocument()
+    })
+
+    it('opens blank board modal when "Create blank board" is clicked', async () => {
+      render(<BoardsPage />)
+
+      // Open template picker
+      fireEvent.click(screen.getByRole('button', { name: /create new board/i }))
+
+      // Click "Create blank board"
+      fireEvent.click(screen.getByText('Create blank board'))
+
+      // Wait for blank board modal to appear
+      await waitFor(() => {
+        expect(screen.getByTestId('create-board-modal')).toBeInTheDocument()
+      })
     })
   })
 
