@@ -4,6 +4,8 @@ import { useImageStorage } from '../hooks/useImageStorage'
 import { getCardsByBoard } from '../lib/storage'
 import { BoardGrid } from '../components/BoardGrid'
 import { Button } from '../components/ui/Button'
+import { TemplatePickerSheet } from '../components/TemplatePickerSheet'
+import { CreateBlankBoardModal } from '../components/CreateBlankBoardModal'
 import { wobbly } from '../styles/wobbly'
 
 interface BoardsPageProps {
@@ -48,93 +50,6 @@ const EmptyState = ({ onCreate }: { onCreate: () => void }) => (
 )
 
 /**
- * Simple create board modal
- */
-const CreateBoardModal = ({
-  isOpen,
-  onClose,
-  onCreate,
-}: {
-  isOpen: boolean
-  onClose: () => void
-  onCreate: (name: string) => void
-}) => {
-  const [name, setName] = useState('')
-
-  if (!isOpen) return null
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (name.trim()) {
-      onCreate(name.trim())
-      setName('')
-      onClose()
-    }
-  }
-
-  return (
-    <div
-      data-testid="create-board-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-    >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div
-        className="relative bg-[#fdfbf7] border-[3px] border-[#2d2d2d] p-6 w-full max-w-sm shadow-[8px_8px_0px_0px_#2d2d2d]"
-        style={{ borderRadius: wobbly.lg }}
-      >
-        <h2
-          className="text-2xl text-[#2d2d2d] mb-4"
-          style={{ fontFamily: "'Kalam', cursive", fontWeight: 700 }}
-        >
-          New Ranking Board
-        </h2>
-
-        <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Enter board name..."
-            autoFocus
-            className="w-full px-4 py-3 mb-4 border-2 border-[#2d2d2d] bg-white text-[#2d2d2d] placeholder:text-[#9a958d]"
-            style={{
-              fontFamily: "'Patrick Hand', cursive",
-              fontSize: '1.125rem',
-              borderRadius: wobbly.sm,
-            }}
-          />
-
-          <div className="flex gap-3">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onClose}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={!name.trim()}
-              className="flex-1"
-            >
-              Create
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
-
-/**
  * BoardsPage Component
  *
  * Main page showing all ranking boards in a 2-column grid.
@@ -142,12 +57,13 @@ const CreateBoardModal = ({
  * - Header with title and create button
  * - Board grid with previews
  * - Empty state for first-time users
- * - Create board modal
+ * - Template picker for creating boards
  */
 export const BoardsPage = ({ onBoardSelect }: BoardsPageProps) => {
-  const { boards, createBoard } = useBoards()
+  const { boards, createBoard, refresh } = useBoards()
   const { getImageUrl } = useImageStorage()
-  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false)
+  const [showBlankBoardModal, setShowBlankBoardModal] = useState(false)
   const [coverImageUrls, setCoverImageUrls] = useState<Record<string, string>>({})
 
   // Calculate card counts for each board
@@ -200,10 +116,18 @@ export const BoardsPage = ({ onBoardSelect }: BoardsPageProps) => {
     return urls
   }, [])
 
-  const handleCreateBoard = (name: string) => {
+  const handleCreateBlankBoard = (name: string) => {
     const board = createBoard(name)
     if (onBoardSelect) {
       onBoardSelect(board.id)
+    }
+  }
+
+  const handleBoardCreatedFromTemplate = (boardId: string) => {
+    // Refresh boards to pick up the newly created board
+    refresh()
+    if (onBoardSelect) {
+      onBoardSelect(boardId)
     }
   }
 
@@ -211,6 +135,14 @@ export const BoardsPage = ({ onBoardSelect }: BoardsPageProps) => {
     if (onBoardSelect) {
       onBoardSelect(boardId)
     }
+  }
+
+  const handleOpenTemplatePicker = () => {
+    setShowTemplatePicker(true)
+  }
+
+  const handleOpenBlankModal = () => {
+    setShowBlankBoardModal(true)
   }
 
   const hasBoards = boards.length > 0
@@ -230,7 +162,7 @@ export const BoardsPage = ({ onBoardSelect }: BoardsPageProps) => {
           <Button
             variant="primary"
             size="sm"
-            onClick={() => setShowCreateModal(true)}
+            onClick={handleOpenTemplatePicker}
             aria-label="Create new board"
           >
             + New
@@ -248,14 +180,22 @@ export const BoardsPage = ({ onBoardSelect }: BoardsPageProps) => {
           onBoardClick={handleBoardClick}
         />
       ) : (
-        <EmptyState onCreate={() => setShowCreateModal(true)} />
+        <EmptyState onCreate={handleOpenTemplatePicker} />
       )}
 
-      {/* Create Modal */}
-      <CreateBoardModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onCreate={handleCreateBoard}
+      {/* Template Picker Sheet */}
+      <TemplatePickerSheet
+        isOpen={showTemplatePicker}
+        onClose={() => setShowTemplatePicker(false)}
+        onBoardCreated={handleBoardCreatedFromTemplate}
+        onCreateBlank={handleOpenBlankModal}
+      />
+
+      {/* Blank Board Modal */}
+      <CreateBlankBoardModal
+        isOpen={showBlankBoardModal}
+        onClose={() => setShowBlankBoardModal(false)}
+        onCreate={handleCreateBlankBoard}
       />
     </div>
   )

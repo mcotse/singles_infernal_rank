@@ -4,7 +4,6 @@ import { Button } from '../components/ui/Button'
 import { wobbly } from '../styles/wobbly'
 import { springConfig } from '../styles/tokens'
 import { importData, exportData, clearAllData } from '../lib/storage'
-import { loadSinglesInfernoS5, loadSinglesInfernoS5Snapshots } from '../data/singlesInfernoS5'
 import { clearAllImages } from '../lib/db'
 import { getDeviceToken } from '../lib/deviceToken'
 import { isAllowlisted } from '../lib/allowlist'
@@ -193,7 +192,6 @@ const ConfirmModal = ({
  * SettingsPage Component
  *
  * Settings page with hand-drawn aesthetic featuring:
- * - Load Sample Data (Singles Inferno S5)
  * - Import/Export data functionality
  * - Clear All Data danger zone
  */
@@ -201,7 +199,6 @@ export const SettingsPage = () => {
   const [feedback, setFeedback] = useState<Feedback | null>(null)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [loadProgress, setLoadProgress] = useState<string>('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const deviceToken = getDeviceToken()
@@ -219,65 +216,6 @@ export const SettingsPage = () => {
   const showFeedback = (type: FeedbackType, message: string) => {
     setFeedback({ type, message })
     setTimeout(() => setFeedback(null), 4000)
-  }
-
-  // Load Singles Inferno S5 seed data with images
-  const handleLoadSeedData = async () => {
-    setIsLoading(true)
-    setLoadProgress('Starting...')
-
-    try {
-      const result = await loadSinglesInfernoS5((current, total, name) => {
-        setLoadProgress(`${name} (${current}/${total})`)
-      })
-
-      if (result.success && result.boardCreated) {
-        const errorNote = result.errors.length > 0
-          ? ` (${result.errors.length} images failed to load)`
-          : ''
-        showFeedback(
-          'success',
-          `Loaded Singles Inferno S5! Created 2 boards with ${result.cardsCreated} cast members and ${result.imagesLoaded} photos.${errorNote}`
-        )
-      } else if (result.errors.includes('Singles Inferno S5 boards already exist')) {
-        showFeedback('warning', 'Singles Inferno S5 boards already exist!')
-      } else {
-        showFeedback('error', result.errors.join(', ') || 'Failed to load seed data')
-      }
-    } catch (error) {
-      showFeedback('error', 'Something went wrong loading the seed data')
-    } finally {
-      setIsLoading(false)
-      setLoadProgress('')
-    }
-  }
-
-  // Load Singles Inferno S5 snapshot history
-  const handleLoadSnapshotHistory = () => {
-    setIsLoading(true)
-    setLoadProgress('Creating snapshots...')
-
-    try {
-      const result = loadSinglesInfernoS5Snapshots((current, total, name) => {
-        setLoadProgress(`${name} (${current}/${total})`)
-      })
-
-      if (result.success && result.snapshotsCreated > 0) {
-        showFeedback(
-          'success',
-          `Created ${result.snapshotsCreated} episode snapshots with ranking history!`
-        )
-      } else if (result.errors.includes('Snapshots already exist for Singles Inferno S5 boards')) {
-        showFeedback('warning', 'Snapshot history already exists!')
-      } else if (result.errors.length > 0) {
-        showFeedback('error', result.errors.join(', '))
-      }
-    } catch (error) {
-      showFeedback('error', 'Something went wrong creating snapshot history')
-    } finally {
-      setIsLoading(false)
-      setLoadProgress('')
-    }
   }
 
   // Handle file import
@@ -411,63 +349,6 @@ export const SettingsPage = () => {
                 {deviceToken}
               </p>
             </details>
-          </div>
-        </SettingsSection>
-
-        {/* Sample Data Section */}
-        <SettingsSection
-          icon="🔥"
-          title="Sample Data"
-          description="Quickly get started with pre-loaded cast members from your favorite shows."
-        >
-          <div
-            className="p-4 bg-[#fff9c4] border-2 border-[#2d2d2d] mb-4"
-            style={{ borderRadius: wobbly.sm }}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-lg">📺</span>
-              <span
-                className="text-[#2d2d2d] font-bold"
-                style={{ fontFamily: "'Kalam', cursive" }}
-              >
-                Singles Inferno Season 5
-              </span>
-            </div>
-            <p
-              className="text-[#2d2d2d]/70 text-sm mb-3"
-              style={{ fontFamily: "'Patrick Hand', cursive" }}
-            >
-              2 boards: 6 women + 7 men from Netflix's hit dating show
-            </p>
-            <div className="flex flex-col gap-2">
-              <Button
-                onClick={handleLoadSeedData}
-                variant="primary"
-                size="sm"
-                disabled={isLoading}
-              >
-                {isLoading ? loadProgress || 'Loading...' : 'Load Cast & Photos'}
-              </Button>
-              <Button
-                onClick={handleLoadSnapshotHistory}
-                variant="secondary"
-                size="sm"
-                disabled={isLoading}
-              >
-                {isLoading ? loadProgress || 'Loading...' : 'Load Ranking History (5 Episodes)'}
-              </Button>
-            </div>
-          </div>
-          <div
-            className="p-3 bg-[#f5f5f5] border-2 border-dashed border-[#e5e0d8]"
-            style={{ borderRadius: wobbly.sm }}
-          >
-            <p
-              className="text-[#9a958d] text-xs"
-              style={{ fontFamily: "'Patrick Hand', cursive" }}
-            >
-              💡 Tip: Load cast first, then load ranking history to see week-over-week changes in the History tab.
-            </p>
           </div>
         </SettingsSection>
 
