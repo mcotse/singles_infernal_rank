@@ -12,6 +12,7 @@ import { Button } from '../components/ui/Button'
 import { useToast } from '../components/ui/Toast'
 import { wobbly } from '../styles/wobbly'
 import { compressImage, generateThumbnail } from '../lib/imageUtils'
+import { perfTiming } from '../lib/perfTiming'
 import type { Card, Board } from '../lib/types'
 
 interface BoardDetailPageProps {
@@ -160,7 +161,7 @@ export const BoardDetailPage = ({
 }: BoardDetailPageProps) => {
   const { getBoard, updateBoard, softDeleteBoard } = useBoards()
   const { cards, reorderCards, updateCard, deleteCard, getCard, createCard } = useCards(boardId)
-  const { saveImage, getThumbnailUrl, getImageUrl } = useImageStorage()
+  const { saveImage, getThumbnailUrls, getImageUrl } = useImageStorage()
   const { createSnapshot, nextEpisodeNumber } = useSnapshots(boardId)
   const { showToast, ToastContainer } = useToast()
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
@@ -171,6 +172,7 @@ export const BoardDetailPage = ({
   const [pendingPhotoCardId, setPendingPhotoCardId] = useState<string | null>(null)
   const [pendingBoardCoverPhoto, setPendingBoardCoverPhoto] = useState(false)
   const [thumbnailUrls, setThumbnailUrls] = useState<Record<string, string>>({})
+  const [loadingCardIds, setLoadingCardIds] = useState<Set<string>>(new Set())
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null)
 
   const board = getBoard(boardId)
@@ -303,33 +305,50 @@ export const BoardDetailPage = ({
     onBack()
   }, [boardId, softDeleteBoard, onBack])
 
-  // Load thumbnail URLs for cards with images - PARALLEL loading for speed
+  // Load thumbnail URLs for cards with images - BATCH loading for speed
   useEffect(() => {
     let cancelled = false
     const loadedUrls: string[] = []
 
     const loadThumbnails = async () => {
-      // Load all thumbnails in parallel for much faster loading
+      // Find cards with thumbnails to load
       const cardsWithThumbnails = cards.filter(card => card.thumbnailKey)
 
-      const results = await Promise.all(
-        cardsWithThumbnails.map(async (card) => {
-          if (cancelled) return null
-          const url = await getThumbnailUrl(card.thumbnailKey!)
-          return url ? { cardId: card.id, url } : null
-        })
-      )
-
-      if (!cancelled) {
-        const urls: Record<string, string> = {}
-        for (const result of results) {
-          if (result) {
-            urls[result.cardId] = result.url
-            loadedUrls.push(result.url)
-          }
-        }
-        setThumbnailUrls(urls)
+      if (cardsWithThumbnails.length === 0) {
+        setThumbnailUrls({})
+        setLoadingCardIds(new Set())
+        return
       }
+
+      // Set loading state for cards with thumbnails
+      const cardIds = new Set(cardsWithThumbnails.map(c => c.id))
+      setLoadingCardIds(cardIds)
+
+      // Start timing
+      perfTiming.mark('thumbnails-start')
+
+      // Batch load all thumbnails in a single IndexedDB transaction
+      const thumbnailKeys = cardsWithThumbnails.map(c => c.thumbnailKey!)
+      const urlMap = await getThumbnailUrls(thumbnailKeys)
+
+      if (cancelled) return
+
+      // Build urls record and track for cleanup
+      const urls: Record<string, string> = {}
+      for (const card of cardsWithThumbnails) {
+        const url = urlMap.get(card.thumbnailKey!)
+        if (url) {
+          urls[card.id] = url
+          loadedUrls.push(url)
+        }
+      }
+
+      // Measure and log timing
+      perfTiming.measure('thumbnails-total', 'thumbnails-start')
+
+      // Update state
+      setThumbnailUrls(urls)
+      setLoadingCardIds(new Set())
     }
     loadThumbnails()
 
@@ -340,7 +359,7 @@ export const BoardDetailPage = ({
         URL.revokeObjectURL(url)
       })
     }
-  }, [cards, getThumbnailUrl])
+  }, [cards, getThumbnailUrls])
 
   // Load cover image URL when board has a cover image
   useEffect(() => {
@@ -392,6 +411,7 @@ export const BoardDetailPage = ({
       <RankList
         cards={cards}
         thumbnailUrls={thumbnailUrls}
+        loadingCardIds={loadingCardIds}
         onReorder={handleReorder}
         onCardTap={handleCardTap}
       />
