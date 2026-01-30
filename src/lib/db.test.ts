@@ -2,6 +2,7 @@ import 'fake-indexeddb/auto'
 import {
   saveImage,
   getImage,
+  getImages,
   deleteImage,
   getAllImageKeys,
   clearAllImages,
@@ -111,6 +112,55 @@ describe('IndexedDB Storage', () => {
       const keys = await getAllImageKeys()
 
       expect(keys).toEqual([])
+    })
+  })
+
+  describe('getImages (batch)', () => {
+    it('returns empty map for empty keys array', async () => {
+      const result = await getImages([])
+      expect(result.size).toBe(0)
+    })
+
+    it('returns empty map when no images exist', async () => {
+      const result = await getImages(['non-existent-1', 'non-existent-2'])
+      expect(result.size).toBe(0)
+    })
+
+    it('returns all images in a single call', async () => {
+      await saveImage(createTestImage('batch-1'))
+      await saveImage(createTestImage('batch-2'))
+      await saveImage(createTestImage('batch-3'))
+
+      const result = await getImages(['batch-1', 'batch-2', 'batch-3'])
+
+      expect(result.size).toBe(3)
+      expect(result.get('batch-1')?.key).toBe('batch-1')
+      expect(result.get('batch-2')?.key).toBe('batch-2')
+      expect(result.get('batch-3')?.key).toBe('batch-3')
+    })
+
+    it('returns only existing images when some keys are missing', async () => {
+      await saveImage(createTestImage('exists-1'))
+      await saveImage(createTestImage('exists-2'))
+
+      const result = await getImages(['exists-1', 'non-existent', 'exists-2'])
+
+      expect(result.size).toBe(2)
+      expect(result.has('exists-1')).toBe(true)
+      expect(result.has('exists-2')).toBe(true)
+      expect(result.has('non-existent')).toBe(false)
+    })
+
+    it('preserves blob data in results', async () => {
+      const image = createTestImage('blob-batch-test')
+      await saveImage(image)
+
+      const result = await getImages(['blob-batch-test'])
+      const retrieved = result.get('blob-batch-test')
+
+      expect(retrieved?.blob).toBeDefined()
+      expect(retrieved?.thumbnail).toBeDefined()
+      expect(retrieved?.mimeType).toBe('image/jpeg')
     })
   })
 })
