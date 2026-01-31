@@ -1,6 +1,21 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { vi, describe, it, expect } from 'vitest'
 import { App } from './App'
+
+// Mock useImageStorage to avoid IndexedDB access in tests
+vi.mock('./hooks/useImageStorage', () => ({
+  useImageStorage: () => ({
+    isProcessing: false,
+    saveImage: vi.fn().mockResolvedValue('test-image-key'),
+    getImage: vi.fn().mockResolvedValue(null),
+    getImageUrl: vi.fn().mockResolvedValue(null),
+    getThumbnailUrl: vi.fn().mockResolvedValue(null),
+    getThumbnailUrls: vi.fn().mockResolvedValue(new Map()),
+    deleteImage: vi.fn().mockResolvedValue(undefined),
+    revokeUrl: vi.fn(),
+  }),
+}))
 
 describe('App', () => {
   describe('rendering', () => {

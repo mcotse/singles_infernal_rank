@@ -61,10 +61,11 @@ const EmptyState = ({ onCreate }: { onCreate: () => void }) => (
  */
 export const BoardsPage = ({ onBoardSelect }: BoardsPageProps) => {
   const { boards, createBoard, refresh } = useBoards()
-  const { getImageUrl } = useImageStorage()
+  const { getImageUrl, getThumbnailUrls } = useImageStorage()
   const [showTemplatePicker, setShowTemplatePicker] = useState(false)
   const [showBlankBoardModal, setShowBlankBoardModal] = useState(false)
   const [coverImageUrls, setCoverImageUrls] = useState<Record<string, string>>({})
+  const [previewUrls, setPreviewUrls] = useState<Record<string, string[]>>({})
 
   // Calculate card counts for each board
   const cardCounts = useMemo(() => {
@@ -109,12 +110,55 @@ export const BoardsPage = ({ onBoardSelect }: BoardsPageProps) => {
   }, [boards, getImageUrl])
 
   // Get preview URLs (top 3 cards' thumbnails) for each board
-  // TODO: Implement when image URLs are available from useImageStorage
-  const previewUrls = useMemo(() => {
-    const urls: Record<string, string[]> = {}
-    // For now, return empty - will be populated when we have actual images
-    return urls
-  }, [])
+  useEffect(() => {
+    let cancelled = false
+    const loadedUrls: string[] = []
+
+    const loadPreviewUrls = async () => {
+      // Collect top 3 cards with thumbnails for each board
+      const boardTopCards: { boardId: string; thumbnailKey: string }[] = []
+
+      for (const board of boards) {
+        const cards = getCardsByBoard(board.id)
+        const top3 = cards.slice(0, 3).filter(c => c.thumbnailKey)
+        for (const card of top3) {
+          boardTopCards.push({ boardId: board.id, thumbnailKey: card.thumbnailKey! })
+        }
+      }
+
+      if (boardTopCards.length === 0) {
+        setPreviewUrls({})
+        return
+      }
+
+      // Batch fetch all thumbnails
+      const allKeys = boardTopCards.map(c => c.thumbnailKey)
+      const urlMap = await getThumbnailUrls(allKeys)
+
+      if (cancelled) return
+
+      // Group URLs by board
+      const urls: Record<string, string[]> = {}
+      for (const board of boards) {
+        const cards = getCardsByBoard(board.id).slice(0, 3).filter(c => c.thumbnailKey)
+        urls[board.id] = cards
+          .map(c => urlMap.get(c.thumbnailKey!))
+          .filter((url): url is string => !!url)
+
+        // Track for cleanup
+        urls[board.id].forEach(url => loadedUrls.push(url))
+      }
+
+      setPreviewUrls(urls)
+    }
+
+    loadPreviewUrls()
+
+    return () => {
+      cancelled = true
+      loadedUrls.forEach(url => URL.revokeObjectURL(url))
+    }
+  }, [boards, getThumbnailUrls])
 
   const handleCreateBlankBoard = (name: string) => {
     const board = createBoard(name)
