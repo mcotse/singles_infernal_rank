@@ -23,6 +23,7 @@ import type { FirebaseApp } from 'firebase/app'
 import type { Auth } from 'firebase/auth'
 import type { Firestore } from 'firebase/firestore'
 import type { FirebaseStorage } from 'firebase/storage'
+import { apiLogger as log, startTiming } from './logger'
 
 // Check if we should use mock auth
 // - In dev: defaults to true unless VITE_USE_MOCK_AUTH=false
@@ -83,25 +84,34 @@ export const initializeFirebase = async (): Promise<void> => {
   if (isInitializing && initPromise) return initPromise // Wait for existing init
 
   if (!isFirebaseConfigured()) {
+    log.error('firebase_init_failed', { reason: 'missing_config' })
     throw new Error(
       'Firebase is not configured. Please set VITE_FIREBASE_* environment variables.'
     )
   }
 
   isInitializing = true
+  const timing = startTiming('firebase_init')
 
   initPromise = (async () => {
-    const { initializeApp } = await import('firebase/app')
-    const { getAuth } = await import('firebase/auth')
-    const { getFirestore } = await import('firebase/firestore')
-    const { getStorage } = await import('firebase/storage')
+    try {
+      const { initializeApp } = await import('firebase/app')
+      const { getAuth } = await import('firebase/auth')
+      const { getFirestore } = await import('firebase/firestore')
+      const { getStorage } = await import('firebase/storage')
 
-    app = initializeApp(firebaseConfig)
-    auth = getAuth(app)
-    db = getFirestore(app)
-    storage = getStorage(app)
+      app = initializeApp(firebaseConfig)
+      auth = getAuth(app)
+      db = getFirestore(app)
+      storage = getStorage(app)
 
-    isInitializing = false
+      isInitializing = false
+      timing.end()
+    } catch (err) {
+      isInitializing = false
+      timing.fail(err)
+      throw err
+    }
   })()
 
   return initPromise
@@ -156,16 +166,26 @@ export const isFirebaseInitialized = (): boolean => {
  * Returns the anonymous user's UID.
  */
 export const initializeAnonymousAuth = async (): Promise<string> => {
-  const auth = await getFirebaseAuth()
-  const { signInAnonymously } = await import('firebase/auth')
+  const timing = startTiming('anonymous_auth_init')
 
-  // If already signed in anonymously, return existing UID
-  if (auth.currentUser) {
-    return auth.currentUser.uid
+  try {
+    const auth = await getFirebaseAuth()
+    const { signInAnonymously } = await import('firebase/auth')
+
+    // If already signed in anonymously, return existing UID
+    if (auth.currentUser) {
+      log.debug('anonymous_auth_existing', { has_user: true })
+      timing.end({ cached: true })
+      return auth.currentUser.uid
+    }
+
+    const result = await signInAnonymously(auth)
+    timing.end({ cached: false })
+    return result.user.uid
+  } catch (err) {
+    timing.fail(err)
+    throw err
   }
-
-  const result = await signInAnonymously(auth)
-  return result.user.uid
 }
 
 /**

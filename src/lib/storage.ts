@@ -7,6 +7,7 @@
 
 import type { Board, Card, Snapshot } from './types'
 import { isBoard, isCard, isSnapshot } from './types'
+import { storageLogger as log } from './logger'
 
 const STORAGE_KEYS = {
   boards: 'singles-infernal-rank:boards',
@@ -53,8 +54,8 @@ export const getBoards = (): Board[] => {
 
     // Filter to only valid boards
     return parsed.filter(isBoard)
-  } catch {
-    console.error('Failed to parse boards from localStorage')
+  } catch (err) {
+    log.error('boards_parse_failed', { error_message: String(err) })
     return []
   }
 }
@@ -65,8 +66,9 @@ export const getBoards = (): Board[] => {
 export const saveBoards = (boards: Board[]): void => {
   try {
     localStorage.setItem(STORAGE_KEYS.boards, JSON.stringify(boards))
-  } catch (error) {
-    console.error('Failed to save boards to localStorage:', error)
+    log.debug('boards_saved', { count: boards.length })
+  } catch (err) {
+    log.error('boards_save_failed', { error_message: String(err), count: boards.length })
     throw new Error('Failed to save boards')
   }
 }
@@ -117,8 +119,8 @@ export const getCards = (): Card[] => {
     if (!Array.isArray(parsed)) return []
 
     return parsed.filter(isCard)
-  } catch {
-    console.error('Failed to parse cards from localStorage')
+  } catch (err) {
+    log.error('cards_parse_failed', { error_message: String(err) })
     return []
   }
 }
@@ -129,8 +131,9 @@ export const getCards = (): Card[] => {
 export const saveCards = (cards: Card[]): void => {
   try {
     localStorage.setItem(STORAGE_KEYS.cards, JSON.stringify(cards))
-  } catch (error) {
-    console.error('Failed to save cards to localStorage:', error)
+    log.debug('cards_saved', { count: cards.length })
+  } catch (err) {
+    log.error('cards_save_failed', { error_message: String(err), count: cards.length })
     throw new Error('Failed to save cards')
   }
 }
@@ -233,8 +236,8 @@ export const getSnapshots = (): Snapshot[] => {
     if (!Array.isArray(parsed)) return []
 
     return parsed.filter(isSnapshot)
-  } catch {
-    console.error('Failed to parse snapshots from localStorage')
+  } catch (err) {
+    log.error('snapshots_parse_failed', { error_message: String(err) })
     return []
   }
 }
@@ -245,8 +248,9 @@ export const getSnapshots = (): Snapshot[] => {
 export const saveSnapshots = (snapshots: Snapshot[]): void => {
   try {
     localStorage.setItem(STORAGE_KEYS.snapshots, JSON.stringify(snapshots))
-  } catch (error) {
-    console.error('Failed to save snapshots to localStorage:', error)
+    log.debug('snapshots_saved', { count: snapshots.length })
+  } catch (err) {
+    log.error('snapshots_save_failed', { error_message: String(err), count: snapshots.length })
     throw new Error('Failed to save snapshots')
   }
 }

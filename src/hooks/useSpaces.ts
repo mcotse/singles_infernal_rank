@@ -26,6 +26,7 @@ import {
 } from '../lib/firestoreSpaces'
 import { generateUniqueJoinCode } from '../lib/wordBank'
 import { initializeAnonymousAuth, getAnonUid, USE_MOCK_AUTH } from '../lib/firebase'
+import { actionLogger as log, logError } from '../lib/logger'
 
 export interface UseSpacesReturn {
   spaces: LocalSpaceMembership[]
@@ -66,7 +67,7 @@ export const useSpaces = (): UseSpacesReturn => {
           setAnonUid(uid)
         }
       } catch (err) {
-        console.error('Failed to initialize anonymous auth:', err)
+        logError('anonymous_auth_failed', err)
       }
     }
     init()
@@ -117,9 +118,10 @@ export const useSpaces = (): UseSpacesReturn => {
         addSpaceMembership(membership)
         loadSpaces()
 
+        log.info('space_created', { space_id: spaceId })
         return membership
       } catch (err) {
-        console.error('Error creating space:', err)
+        logError('space_create_failed', err)
         setError('Failed to create space')
         return null
       } finally {
@@ -178,9 +180,10 @@ export const useSpaces = (): UseSpacesReturn => {
         addSpaceMembership(membership)
         loadSpaces()
 
+        log.info('space_joined', { space_id: space.id })
         return membership
       } catch (err) {
-        console.error('Error joining space:', err)
+        logError('space_join_failed', err)
         setError('Failed to join space')
         return null
       } finally {
@@ -201,9 +204,10 @@ export const useSpaces = (): UseSpacesReturn => {
           await removeFirestoreMember(spaceId, membership.memberId)
           removeSpaceMembership(spaceId)
           loadSpaces()
+          log.info('space_left', { space_id: spaceId })
         }
       } catch (err) {
-        console.error('Error leaving space:', err)
+        logError('space_leave_failed', err, { space_id: spaceId })
         setError('Failed to leave space')
       } finally {
         setIsLoading(false)
