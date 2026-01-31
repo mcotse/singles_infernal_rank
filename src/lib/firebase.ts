@@ -12,7 +12,8 @@
  *
  * PRODUCTION Setup Instructions:
  * 1. Create a Firebase project at https://console.firebase.google.com
- * 2. Enable Google Sign-In in Authentication > Sign-in method
+ * 2. Enable Anonymous Sign-In in Authentication > Sign-in method
+ *    (Click Anonymous, toggle Enable, then Save)
  * 3. Create a Firestore database (start in test mode for dev)
  * 4. Create a Storage bucket
  * 5. Copy web app config from Project Settings > Your apps > Web app
