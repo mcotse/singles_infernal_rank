@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Agentation } from 'agentation'
 import { TabBar, type Tab } from './components/ui/TabBar'
@@ -129,13 +129,13 @@ export const App = () => {
     clearError: clearSpacesError,
   } = useSpaces()
 
-  // Detect ?joinCode= from URL
-  const prefillJoinCode = useMemo(() => {
+  // Detect ?joinCode= from URL - use state so we can clear it after use
+  const [prefillJoinCode, setPrefillJoinCode] = useState<string | undefined>(() => {
     const params = new URLSearchParams(window.location.search)
     return params.get('joinCode') ?? undefined
-  }, [])
+  })
 
-  // Auto-open join modal if joinCode present
+  // Auto-open join modal if joinCode present, then clear it
   useEffect(() => {
     if (prefillJoinCode) {
       setActiveTab('home')
@@ -143,6 +143,8 @@ export const App = () => {
       const url = new URL(window.location.href)
       url.searchParams.delete('joinCode')
       window.history.replaceState({}, '', url.toString())
+      // Clear prefillJoinCode so modal doesn't reopen when navigating back to home tab
+      setPrefillJoinCode(undefined)
     }
   }, [prefillJoinCode])
 
