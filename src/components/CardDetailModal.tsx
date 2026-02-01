@@ -22,6 +22,8 @@ export interface CardDetailModalProps {
   onDelete: (cardId: string) => void
   /** Called when user wants to change photo */
   onChangePhoto?: () => void
+  /** Whether the modal is in read-only view mode */
+  isReadOnly?: boolean
 }
 
 /**
@@ -162,6 +164,52 @@ const DeleteConfirmation = ({
  * - Delete with confirmation
  * - Save changes
  */
+/**
+ * Read-only photo display (no change button)
+ */
+const PhotoDisplayReadOnly = ({ url }: { url: string }) => (
+  <div className="relative w-full max-w-[200px]">
+    <div
+      className="
+        aspect-square overflow-hidden
+        border-[3px] border-[#2d2d2d]
+        shadow-[4px_4px_0px_0px_#2d2d2d]
+      "
+      style={{ borderRadius: wobbly.lg }}
+    >
+      <img
+        src={url}
+        alt="Card photo"
+        className="w-full h-full object-cover"
+      />
+    </div>
+  </div>
+)
+
+/**
+ * Empty photo placeholder for read-only mode
+ */
+const PhotoPlaceholderReadOnly = () => (
+  <div
+    className="
+      w-full aspect-square max-w-[200px]
+      bg-[#e5e0d8]
+      border-[3px] border-dashed border-[#9a958d]
+      flex flex-col items-center justify-center gap-2
+      text-[#9a958d]
+    "
+    style={{ borderRadius: wobbly.lg }}
+  >
+    <span className="text-4xl">📷</span>
+    <span
+      className="text-sm"
+      style={{ fontFamily: "'Patrick Hand', cursive" }}
+    >
+      No Photo
+    </span>
+  </div>
+)
+
 export const CardDetailModal = ({
   isOpen,
   card,
@@ -171,6 +219,7 @@ export const CardDetailModal = ({
   onSave,
   onDelete,
   onChangePhoto,
+  isReadOnly = false,
 }: CardDetailModalProps) => {
   const [name, setName] = useState(card.name)
   const [nickname, setNickname] = useState(card.nickname || '')
@@ -208,7 +257,12 @@ export const CardDetailModal = ({
     setShowDeleteConfirm(false)
   }
 
-  const footerContent = (
+  // Footer content differs based on mode
+  const footerContent = isReadOnly ? (
+    <Button variant="secondary" onClick={onClose} className="w-full">
+      Close
+    </Button>
+  ) : (
     <div className="flex gap-3">
       {!isNewCard && (
         <Button
@@ -230,47 +284,61 @@ export const CardDetailModal = ({
     </div>
   )
 
+  // Determine title based on mode
+  const title = isReadOnly ? 'View Card' : (isNewCard ? 'Add Card' : 'Edit Card')
+
   return (
     <>
       <BottomSheet
         isOpen={isOpen}
         onClose={onClose}
-        title={isNewCard ? 'Add Card' : 'Edit Card'}
+        title={title}
         footer={footerContent}
       >
         <div className="space-y-6">
           {/* Photo Area */}
           <div data-testid="photo-area" className="flex justify-center">
-            {imageUrl ? (
-              <PhotoDisplay url={imageUrl} onClick={onChangePhoto} />
+            {isReadOnly ? (
+              imageUrl ? (
+                <PhotoDisplayReadOnly url={imageUrl} />
+              ) : (
+                <PhotoPlaceholderReadOnly />
+              )
             ) : (
-              <PhotoPlaceholder onClick={onChangePhoto} />
+              imageUrl ? (
+                <PhotoDisplay url={imageUrl} onClick={onChangePhoto} />
+              ) : (
+                <PhotoPlaceholder onClick={onChangePhoto} />
+              )
             )}
           </div>
 
-          {/* Name Input */}
+          {/* Name Input/Display */}
           <Input
             label="Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Enter name..."
+            disabled={isReadOnly}
           />
 
-          {/* Nickname Input */}
+          {/* Nickname Input/Display */}
           <Input
             label="Nickname"
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
             placeholder="Optional nickname..."
+            disabled={isReadOnly}
           />
 
-          {/* Notes Input */}
+          {/* Notes Input/Display */}
           <Input
             label="Notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Add notes..."
+            placeholder={isReadOnly ? 'No notes' : 'Add notes...'}
             multiline
+            disabled={isReadOnly}
             rows={3}
           />
         </div>
