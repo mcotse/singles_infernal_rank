@@ -108,4 +108,54 @@ describe('RankList', () => {
       expect(list.className).toContain('gap-')
     })
   })
+
+  describe('read-only mode', () => {
+    it('renders all cards in read-only mode', () => {
+      render(<RankList {...defaultProps} isReadOnly />)
+
+      expect(screen.getByText('First Item')).toBeInTheDocument()
+      expect(screen.getByText('Second Item')).toBeInTheDocument()
+      expect(screen.getByText('Third Item')).toBeInTheDocument()
+    })
+
+    it('displays correct rank badges in read-only mode', () => {
+      render(<RankList {...defaultProps} isReadOnly />)
+
+      const badges = screen.getAllByTestId('rank-badge')
+      expect(badges[0]).toHaveTextContent('1')
+      expect(badges[1]).toHaveTextContent('2')
+      expect(badges[2]).toHaveTextContent('3')
+    })
+
+    it('calls onCardTap when card is clicked in read-only mode', () => {
+      const onCardTap = vi.fn()
+      render(<RankList {...defaultProps} onCardTap={onCardTap} isReadOnly />)
+
+      fireEvent.click(screen.getAllByTestId('card-body')[0])
+
+      expect(onCardTap).toHaveBeenCalledWith('1')
+    })
+
+    it('does not render drag handles in read-only mode', () => {
+      render(<RankList {...defaultProps} isReadOnly />)
+
+      // In read-only mode, StaticCard is used which doesn't have drag infrastructure
+      // The drag handle should not be interactive for dragging
+      const list = screen.getByTestId('rank-list')
+      // StaticCard wraps RankCard in a plain div, not Reorder.Item
+      // So there's no Reorder.Group
+      expect(list.tagName.toLowerCase()).toBe('div')
+    })
+
+    it('renders thumbnails in read-only mode', () => {
+      const thumbnailUrls = {
+        '1': 'thumb1.jpg',
+      }
+
+      render(<RankList {...defaultProps} thumbnailUrls={thumbnailUrls} isReadOnly />)
+
+      const img = screen.getByRole('img', { name: /first item/i })
+      expect(img).toHaveAttribute('src', 'thumb1.jpg')
+    })
+  })
 })

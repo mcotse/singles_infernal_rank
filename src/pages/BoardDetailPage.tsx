@@ -3,6 +3,7 @@ import { useBoards } from '../hooks/useBoards'
 import { useCards } from '../hooks/useCards'
 import { useImageStorage } from '../hooks/useImageStorage'
 import { useSnapshots } from '../hooks/useSnapshots'
+import { useSpaceBoard } from '../hooks/useSpaceBoard'
 import { RankList } from '../components/RankList'
 import { CardDetailModal } from '../components/CardDetailModal'
 import { EditBoardSheet } from '../components/EditBoardSheet'
@@ -14,6 +15,7 @@ import { wobbly } from '../styles/wobbly'
 import { compressImage, generateThumbnail } from '../lib/imageUtils'
 import { perfTiming } from '../lib/perfTiming'
 import type { Card, Board } from '../lib/types'
+import type { SpaceCard } from '../lib/spaceTypes'
 
 interface BoardDetailPageProps {
   /** ID of the board to display */
@@ -24,6 +26,12 @@ interface BoardDetailPageProps {
   onCardTap?: (cardId: string) => void
   /** Called when add card button is pressed */
   onAddCard?: () => void
+  /** Space ID if viewing from a space (for Firestore fetch) */
+  spaceId?: string
+  /** Owner ID of the board (for determining edit permissions) */
+  ownerId?: string
+  /** Whether viewing in read-only mode (another user's board) */
+  isReadOnly?: boolean
 }
 
 /**
@@ -158,12 +166,23 @@ export const BoardDetailPage = ({
   onBack,
   onCardTap,
   onAddCard,
+  spaceId,
+  ownerId: _ownerId, // Used for future compare feature
+  isReadOnly = false,
 }: BoardDetailPageProps) => {
+  // Local data hooks (for own boards)
   const { getBoard, updateBoard, softDeleteBoard } = useBoards()
-  const { cards, reorderCards, updateCard, deleteCard, getCard, createCard } = useCards(boardId)
+  const { cards: localCards, reorderCards, updateCard, deleteCard, createCard } = useCards(boardId)
   const { saveImage, getThumbnailUrls, getImageUrl } = useImageStorage()
   const { createSnapshot, nextEpisodeNumber } = useSnapshots(boardId)
   const { showToast, ToastContainer } = useToast()
+
+  // Firestore data (for viewing others' boards in a space)
+  const { board: spaceBoard, cards: spaceCards, isLoading: spaceLoading } = useSpaceBoard(
+    isReadOnly ? spaceId ?? null : null,
+    isReadOnly ? boardId : null
+  )
+
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [isAddingCard, setIsAddingCard] = useState(false)
   const [showSaveEpisodeModal, setShowSaveEpisodeModal] = useState(false)
@@ -175,8 +194,46 @@ export const BoardDetailPage = ({
   const [loadingCardIds, setLoadingCardIds] = useState<Set<string>>(new Set())
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null)
 
-  const board = getBoard(boardId)
-  const selectedCard = selectedCardId ? getCard(selectedCardId) : null
+  // Determine data source: local or Firestore
+  const localBoard = getBoard(boardId)
+  const board = isReadOnly ? spaceBoard : localBoard
+
+  // Convert SpaceCards to Card-like objects for display
+  // SpaceCards have imageUrl/thumbnailUrl instead of imageKey/thumbnailKey
+  const cards: Card[] = useMemo(() => {
+    if (isReadOnly && spaceCards.length > 0) {
+      // Map SpaceCards to Cards for the RankList
+      return spaceCards.map((sc: SpaceCard) => ({
+        id: sc.id,
+        boardId: sc.boardId,
+        name: sc.name,
+        nickname: sc.nickname,
+        imageKey: null, // SpaceCards don't have IndexedDB keys
+        thumbnailKey: null,
+        imageCrop: null,
+        notes: sc.notes,
+        metadata: {},
+        rank: sc.rank,
+        createdAt: sc.syncedAt,
+        updatedAt: sc.syncedAt,
+      }))
+    }
+    return localCards
+  }, [isReadOnly, spaceCards, localCards])
+
+  // For space cards, use the thumbnailUrl directly instead of loading from IndexedDB
+  const spaceThumbnailUrls = useMemo(() => {
+    if (!isReadOnly) return {}
+    const urls: Record<string, string> = {}
+    spaceCards.forEach((sc: SpaceCard) => {
+      if (sc.thumbnailUrl) {
+        urls[sc.id] = sc.thumbnailUrl
+      }
+    })
+    return urls
+  }, [isReadOnly, spaceCards])
+
+  const selectedCard = selectedCardId ? cards.find(c => c.id === selectedCardId) : null
 
   // Template for new cards - memoized to prevent useEffect reset on every render
   const newCardTemplate: Card = useMemo(() => ({
@@ -194,11 +251,29 @@ export const BoardDetailPage = ({
     updatedAt: Date.now(),
   }), [boardId, cards.length])
 
+  // Show loading state for space boards
+  if (isReadOnly && spaceLoading) {
+    return (
+      <div className="min-h-full flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="text-4xl mb-4 animate-pulse">📋</div>
+          <p
+            className="text-[#9a958d]"
+            style={{ fontFamily: "'Patrick Hand', cursive" }}
+          >
+            Loading board...
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   if (!board) {
     return <BoardNotFound onBack={onBack} />
   }
 
   const handleReorder = (fromIndex: number, toIndex: number) => {
+    if (isReadOnly) return // Don't allow reordering in read-only mode
     reorderCards(fromIndex, toIndex)
   }
 
@@ -372,6 +447,13 @@ export const BoardDetailPage = ({
         return
       }
 
+      // For space boards, coverImage is already a Firebase Storage URL
+      if (isReadOnly && board.coverImage.startsWith('http')) {
+        setCoverImageUrl(board.coverImage)
+        return
+      }
+
+      // For local boards, load from IndexedDB
       const url = await getImageUrl(board.coverImage)
       if (!cancelled && url) {
         loadedUrl = url
@@ -386,7 +468,13 @@ export const BoardDetailPage = ({
         URL.revokeObjectURL(loadedUrl)
       }
     }
-  }, [board?.coverImage, getImageUrl])
+  }, [board?.coverImage, getImageUrl, isReadOnly])
+
+  // Combine thumbnail URLs from space (Firebase) and local (IndexedDB)
+  const combinedThumbnailUrls = isReadOnly ? spaceThumbnailUrls : thumbnailUrls
+
+  // Get owner name for read-only banner
+  const ownerName = isReadOnly && spaceBoard ? spaceBoard.ownerName : null
 
   return (
     <div className="min-h-full pb-20">
@@ -402,38 +490,57 @@ export const BoardDetailPage = ({
             {board.name}
           </h1>
 
-          <EditBoardButton onClick={() => setShowEditBoardSheet(true)} />
-          <SaveEpisodeButton onClick={() => setShowSaveEpisodeModal(true)} />
+          {/* Only show edit controls if not read-only */}
+          {!isReadOnly && (
+            <>
+              <EditBoardButton onClick={() => setShowEditBoardSheet(true)} />
+              <SaveEpisodeButton onClick={() => setShowSaveEpisodeModal(true)} />
+            </>
+          )}
         </div>
+
+        {/* Read-only owner banner */}
+        {isReadOnly && ownerName && (
+          <div
+            className="px-4 py-2 bg-[#fff9c4] border-t border-[#e5e0d8] text-center"
+            style={{ fontFamily: "'Patrick Hand', cursive" }}
+          >
+            <span className="text-[#2d2d2d]">
+              Viewing <strong>{ownerName}&apos;s</strong> rankings
+            </span>
+          </div>
+        )}
       </header>
 
       {/* Rank List */}
       <RankList
         cards={cards}
-        thumbnailUrls={thumbnailUrls}
+        thumbnailUrls={combinedThumbnailUrls}
         loadingCardIds={loadingCardIds}
         onReorder={handleReorder}
         onCardTap={handleCardTap}
+        isReadOnly={isReadOnly}
       />
 
-      {/* Add Card FAB */}
-      <AddCardFAB onClick={handleAddCard} />
+      {/* Add Card FAB - only show if not read-only */}
+      {!isReadOnly && <AddCardFAB onClick={handleAddCard} />}
 
-      {/* Card Detail Modal - Edit Mode */}
+      {/* Card Detail Modal - Edit/View Mode */}
       {selectedCard && (
         <CardDetailModal
           isOpen={!!selectedCardId}
           card={selectedCard}
-          imageUrl={selectedCard.thumbnailKey ? thumbnailUrls[selectedCard.id] : null}
+          imageUrl={combinedThumbnailUrls[selectedCard.id] || null}
           onClose={handleCloseModal}
           onSave={handleSaveCard}
           onDelete={handleDeleteCard}
           onChangePhoto={() => handleChangePhoto(selectedCard.id)}
+          isReadOnly={isReadOnly}
         />
       )}
 
-      {/* Card Detail Modal - Add Mode */}
-      {isAddingCard && (
+      {/* Card Detail Modal - Add Mode (only when not read-only) */}
+      {!isReadOnly && isAddingCard && (
         <CardDetailModal
           isOpen={isAddingCard}
           card={newCardTemplate}
@@ -445,42 +552,46 @@ export const BoardDetailPage = ({
         />
       )}
 
-      {/* Photo Picker (hidden file input) */}
-      {/* Note: We wrap the trigger in an arrow function to prevent React from
-          interpreting it as a functional state updater and calling it immediately */}
-      <PhotoPicker
-        onPhotoSelect={handlePhotoSelect}
-        onTriggerReady={(trigger) => setPhotoPickerTrigger(() => trigger)}
-      />
+      {/* Photo Picker (hidden file input) - only when not read-only */}
+      {!isReadOnly && (
+        <PhotoPicker
+          onPhotoSelect={handlePhotoSelect}
+          onTriggerReady={(trigger) => setPhotoPickerTrigger(() => trigger)}
+        />
+      )}
 
-      {/* Save Episode Modal */}
-      <SaveEpisodeModal
-        isOpen={showSaveEpisodeModal}
-        suggestedEpisodeNumber={nextEpisodeNumber}
-        boardName={board.name}
-        onClose={() => setShowSaveEpisodeModal(false)}
-        onSave={(episodeNumber, label, notes) => {
-          try {
-            createSnapshot(cards, { episodeNumber, label, notes })
-            setShowSaveEpisodeModal(false)
-          } catch (error) {
-            console.error('Failed to save snapshot:', error)
-            // Keep modal open so user knows save failed
-            showToast('Failed to save episode. Please try again.', 'error')
-          }
-        }}
-      />
+      {/* Save Episode Modal - only when not read-only */}
+      {!isReadOnly && (
+        <SaveEpisodeModal
+          isOpen={showSaveEpisodeModal}
+          suggestedEpisodeNumber={nextEpisodeNumber}
+          boardName={board.name}
+          onClose={() => setShowSaveEpisodeModal(false)}
+          onSave={(episodeNumber, label, notes) => {
+            try {
+              createSnapshot(cards, { episodeNumber, label, notes })
+              setShowSaveEpisodeModal(false)
+            } catch (error) {
+              console.error('Failed to save snapshot:', error)
+              // Keep modal open so user knows save failed
+              showToast('Failed to save episode. Please try again.', 'error')
+            }
+          }}
+        />
+      )}
 
-      {/* Edit Board Sheet */}
-      <EditBoardSheet
-        isOpen={showEditBoardSheet}
-        board={board}
-        coverImageUrl={coverImageUrl}
-        onClose={() => setShowEditBoardSheet(false)}
-        onSave={handleSaveBoard}
-        onDelete={handleDeleteBoard}
-        onChangePhoto={handleChangeBoardCoverPhoto}
-      />
+      {/* Edit Board Sheet - only when not read-only */}
+      {!isReadOnly && (
+        <EditBoardSheet
+          isOpen={showEditBoardSheet}
+          board={board}
+          coverImageUrl={coverImageUrl}
+          onClose={() => setShowEditBoardSheet(false)}
+          onSave={handleSaveBoard}
+          onDelete={handleDeleteBoard}
+          onChangePhoto={handleChangeBoardCoverPhoto}
+        />
+      )}
 
       {/* Toast notifications */}
       <ToastContainer />

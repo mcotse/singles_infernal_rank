@@ -6,7 +6,7 @@
  */
 
 import type { Board } from './types'
-import type { Space, SpaceMember, SpaceBoard, SpaceMemberRole } from './spaceTypes'
+import type { Space, SpaceMember, SpaceBoard, SpaceMemberRole, SpaceCard } from './spaceTypes'
 import { getFirebaseDb, USE_MOCK_AUTH } from './firebase'
 
 // ============ Space CRUD ============
@@ -288,4 +288,104 @@ export const updateSpaceBoardDraft = async (
     isDraft,
     syncedAt: Date.now(),
   })
+}
+
+/**
+ * Get a single board from a space
+ */
+export const getSpaceBoard = async (
+  spaceId: string,
+  boardId: string
+): Promise<SpaceBoard | null> => {
+  if (USE_MOCK_AUTH) return null
+
+  const db = await getFirebaseDb()
+  const { doc, getDoc } = await import('firebase/firestore')
+
+  const snap = await getDoc(doc(db, 'spaces', spaceId, 'boards', boardId))
+  if (!snap.exists()) return null
+  return snap.data() as SpaceBoard
+}
+
+// ============ Card CRUD ============
+
+/**
+ * Save cards to a board in a space (batch write)
+ * Replaces all existing cards for the board
+ */
+export const saveSpaceCards = async (
+  spaceId: string,
+  boardId: string,
+  cards: SpaceCard[]
+): Promise<void> => {
+  if (USE_MOCK_AUTH) return
+
+  const db = await getFirebaseDb()
+  const { doc, writeBatch } = await import('firebase/firestore')
+
+  const batch = writeBatch(db)
+
+  for (const card of cards) {
+    const cardRef = doc(db, 'spaces', spaceId, 'boards', boardId, 'cards', card.id)
+    batch.set(cardRef, card)
+  }
+
+  await batch.commit()
+}
+
+/**
+ * Get all cards for a board in a space
+ */
+export const getSpaceCards = async (
+  spaceId: string,
+  boardId: string
+): Promise<SpaceCard[]> => {
+  if (USE_MOCK_AUTH) return []
+
+  const db = await getFirebaseDb()
+  const { collection, getDocs, orderBy, query } = await import('firebase/firestore')
+
+  const q = query(
+    collection(db, 'spaces', spaceId, 'boards', boardId, 'cards'),
+    orderBy('rank', 'asc')
+  )
+  const snap = await getDocs(q)
+  return snap.docs.map((doc) => doc.data() as SpaceCard)
+}
+
+/**
+ * Delete a single card from a space board
+ */
+export const deleteSpaceCard = async (
+  spaceId: string,
+  boardId: string,
+  cardId: string
+): Promise<void> => {
+  if (USE_MOCK_AUTH) return
+
+  const db = await getFirebaseDb()
+  const { doc, deleteDoc } = await import('firebase/firestore')
+
+  await deleteDoc(doc(db, 'spaces', spaceId, 'boards', boardId, 'cards', cardId))
+}
+
+/**
+ * Delete all cards for a board in a space
+ */
+export const deleteAllSpaceCards = async (
+  spaceId: string,
+  boardId: string
+): Promise<void> => {
+  if (USE_MOCK_AUTH) return
+
+  const db = await getFirebaseDb()
+  const { collection, getDocs, writeBatch } = await import('firebase/firestore')
+
+  const snap = await getDocs(collection(db, 'spaces', spaceId, 'boards', boardId, 'cards'))
+
+  if (snap.empty) return
+
+  const batch = writeBatch(db)
+  snap.docs.forEach((doc) => batch.delete(doc.ref))
+  await batch.commit()
 }

@@ -46,6 +46,24 @@ export interface SpaceBoard extends Board {
   syncedAt: number
 }
 
+// ============ Space Card ============
+
+/**
+ * SpaceCard - A card synced to Firestore within a space board
+ * Stores image URLs (Firebase Storage) instead of IndexedDB keys
+ */
+export interface SpaceCard {
+  id: string
+  boardId: string
+  name: string
+  nickname: string
+  imageUrl: string | null  // Firebase Storage URL (full image)
+  thumbnailUrl: string | null  // Firebase Storage URL (thumbnail)
+  rank: number
+  notes: string
+  syncedAt: number
+}
+
 // ============ Local Membership ============
 
 /**

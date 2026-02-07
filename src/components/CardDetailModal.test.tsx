@@ -185,4 +185,73 @@ describe('CardDetailModal', () => {
       expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument()
     })
   })
+
+  describe('read-only mode', () => {
+    it('shows "View Card" title when isReadOnly is true', () => {
+      render(<CardDetailModal {...defaultProps} isReadOnly />)
+      expect(screen.getByRole('heading', { name: 'View Card' })).toBeInTheDocument()
+    })
+
+    it('renders name input as disabled in read-only mode', () => {
+      render(<CardDetailModal {...defaultProps} isReadOnly />)
+      const nameInput = screen.getByLabelText(/^name$/i)
+      expect(nameInput).toBeDisabled()
+      expect(nameInput).toHaveValue('Test Card')
+    })
+
+    it('renders nickname input as disabled in read-only mode', () => {
+      render(<CardDetailModal {...defaultProps} isReadOnly />)
+      const nicknameInput = screen.getByLabelText(/nickname/i)
+      expect(nicknameInput).toBeDisabled()
+    })
+
+    it('renders notes input as disabled in read-only mode', () => {
+      render(<CardDetailModal {...defaultProps} isReadOnly />)
+      const notesInput = screen.getByLabelText(/notes/i)
+      expect(notesInput).toBeDisabled()
+      expect(notesInput).toHaveValue('Some notes here')
+    })
+
+    it('shows only Close button in read-only mode (no Save or Delete)', () => {
+      render(<CardDetailModal {...defaultProps} isReadOnly />)
+
+      // The footer should have a "Close" button with text content (not the header X)
+      const closeButtons = screen.getAllByRole('button', { name: /close/i })
+      // One is the header X (✕) and one is the footer "Close" button
+      expect(closeButtons.length).toBeGreaterThanOrEqual(1)
+      // Verify the footer has text "Close"
+      expect(screen.getByText('Close')).toBeInTheDocument()
+      // Save and Delete buttons should NOT exist
+      expect(screen.queryByRole('button', { name: /save/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /delete/i })).not.toBeInTheDocument()
+    })
+
+    it('calls onClose when Close button is clicked in read-only mode', () => {
+      const onClose = vi.fn()
+      render(<CardDetailModal {...defaultProps} onClose={onClose} isReadOnly />)
+
+      // Click the footer Close button (find by text content)
+      const closeButton = screen.getByText('Close').closest('button')
+      fireEvent.click(closeButton!)
+
+      expect(onClose).toHaveBeenCalled()
+    })
+
+    it('renders photo in read-only mode when imageUrl provided', () => {
+      render(<CardDetailModal {...defaultProps} imageUrl="test.jpg" isReadOnly />)
+      const img = screen.getByRole('img')
+      expect(img).toHaveAttribute('src', 'test.jpg')
+    })
+
+    it('does not show photo change button in read-only mode', () => {
+      render(<CardDetailModal {...defaultProps} imageUrl="test.jpg" isReadOnly />)
+      // In read-only mode, PhotoDisplayReadOnly is used which has no change button
+      expect(screen.queryByRole('button', { name: /change photo/i })).not.toBeInTheDocument()
+    })
+
+    it('shows "No Photo" placeholder in read-only mode when no image', () => {
+      render(<CardDetailModal {...defaultProps} isReadOnly />)
+      expect(screen.getByText('No Photo')).toBeInTheDocument()
+    })
+  })
 })

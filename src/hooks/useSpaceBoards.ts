@@ -6,8 +6,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import type { Board } from '../lib/types'
-import type { SpaceBoard } from '../lib/spaceTypes'
+import type { Board, Card } from '../lib/types'
+import type { SpaceBoard, SpaceCard } from '../lib/spaceTypes'
 import { SPACE_LIMITS } from '../lib/spaceTypes'
 import { getDeviceToken } from '../lib/deviceToken'
 import { isAllowlisted } from '../lib/allowlist'
@@ -18,8 +18,12 @@ import {
   getSpaceBoardsByOwner,
   deleteSpaceBoard,
   updateSpaceBoardDraft,
+  saveSpaceCards,
 } from '../lib/firestoreSpaces'
 import { getSpaceMembership } from '../lib/spaceStorage'
+import { getCardsByBoard } from '../lib/storage'
+import { getImage } from '../lib/db'
+import { uploadCardImage, uploadBoardCoverImage } from '../lib/firebaseStorage'
 
 export interface UseSpaceBoardsReturn {
   /** All non-draft boards in the space (visible to everyone) */
@@ -93,7 +97,75 @@ export const useSpaceBoards = (spaceId: string | null): UseSpaceBoardsReturn => 
         const membership = getSpaceMembership(spaceId)
         const ownerName = membership?.displayName ?? 'Unknown'
 
-        const result = await saveSpaceBoard(spaceId, board, uid, ownerName, isDraft)
+        // Get local cards for this board
+        const localCards = getCardsByBoard(board.id)
+
+        // Convert local cards to space cards with Firebase Storage URLs
+        const spaceCards: SpaceCard[] = await Promise.all(
+          localCards.map(async (card: Card) => {
+            let imageUrl: string | null = null
+            let thumbnailUrl: string | null = null
+
+            // Upload images to Firebase Storage if they exist
+            if (card.imageKey) {
+              const storedImage = await getImage(card.imageKey)
+              if (storedImage) {
+                try {
+                  imageUrl = await uploadCardImage(spaceId, board.id, card.id, storedImage.blob)
+                  // Also upload thumbnail
+                  if (storedImage.thumbnail) {
+                    thumbnailUrl = await uploadCardImage(
+                      spaceId,
+                      board.id,
+                      `${card.id}_thumb`,
+                      storedImage.thumbnail
+                    )
+                  }
+                } catch (err) {
+                  console.error('Failed to upload card image:', err)
+                }
+              }
+            }
+
+            return {
+              id: card.id,
+              boardId: card.boardId,
+              name: card.name,
+              nickname: card.nickname,
+              imageUrl,
+              thumbnailUrl,
+              rank: card.rank,
+              notes: card.notes,
+              syncedAt: Date.now(),
+            }
+          })
+        )
+
+        // Upload board cover image if it exists
+        let boardWithCoverUrl = board
+        if (board.coverImage) {
+          const coverImage = await getImage(board.coverImage)
+          if (coverImage) {
+            try {
+              const coverUrl = await uploadBoardCoverImage(spaceId, board.id, coverImage.blob)
+              // Store the URL in a way that SpaceBoard can use
+              // Note: SpaceBoard inherits coverImage as string | null
+              // We'll store the Firebase URL in the coverImage field for synced boards
+              boardWithCoverUrl = { ...board, coverImage: coverUrl }
+            } catch (err) {
+              console.error('Failed to upload board cover image:', err)
+            }
+          }
+        }
+
+        // Save board to Firestore
+        const result = await saveSpaceBoard(spaceId, boardWithCoverUrl, uid, ownerName, isDraft)
+
+        // Save cards to Firestore
+        if (spaceCards.length > 0) {
+          await saveSpaceCards(spaceId, board.id, spaceCards)
+        }
+
         await loadBoards()
         return result
       } catch (err) {

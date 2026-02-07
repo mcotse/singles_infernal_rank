@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Agentation } from 'agentation'
 import { TabBar, type Tab } from './components/ui/TabBar'
@@ -12,6 +12,18 @@ import { getBoards } from './lib/storage'
 import { loadSinglesInfernoS5 } from './data/singlesInfernoS5'
 import { wobbly } from './styles/wobbly'
 import { useSpaces } from './hooks/useSpaces'
+import { getAnonUid } from './lib/firebase'
+
+/**
+ * Context for viewing a board, tracks whether we're viewing
+ * from a space (and if so, whether it's read-only)
+ */
+interface BoardViewContext {
+  boardId: string
+  spaceId?: string
+  ownerId?: string
+  isReadOnly?: boolean
+}
 
 const tabs: Tab[] = [
   { id: 'home', label: 'Home', icon: '🏠' },
@@ -112,11 +124,18 @@ export const App = () => {
   const [activeTab, setActiveTab] = useState('home')
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null)
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null)
+  const [boardViewContext, setBoardViewContext] = useState<BoardViewContext | null>(null)
+  const [currentUserAnonUid, setCurrentUserAnonUid] = useState<string | null>(null)
   const [isFirstLaunch, setIsFirstLaunch] = useState(false)
   const [loadProgress, setLoadProgress] = useState('')
   const [loadCurrent, setLoadCurrent] = useState(0)
   const [loadTotal, setLoadTotal] = useState(0)
   const [refreshKey, setRefreshKey] = useState(0)
+
+  // Get current user's anon UID for determining read-only status
+  useEffect(() => {
+    getAnonUid().then(setCurrentUserAnonUid)
+  }, [])
 
   // Spaces hook
   const {
@@ -177,12 +196,28 @@ export const App = () => {
     }
   }, [])
 
-  const handleBoardSelect = (boardId: string) => {
+  const handleBoardSelect = useCallback((
+    boardId: string,
+    spaceContext?: { spaceId: string; ownerId: string }
+  ) => {
     setSelectedBoardId(boardId)
-  }
+
+    if (spaceContext) {
+      const isOwner = spaceContext.ownerId === currentUserAnonUid
+      setBoardViewContext({
+        boardId,
+        spaceId: spaceContext.spaceId,
+        ownerId: spaceContext.ownerId,
+        isReadOnly: !isOwner,
+      })
+    } else {
+      setBoardViewContext({ boardId })
+    }
+  }, [currentUserAnonUid])
 
   const handleBackToList = () => {
     setSelectedBoardId(null)
+    setBoardViewContext(null)
   }
 
   const handleSelectSpace = (spaceId: string) => {
@@ -213,6 +248,19 @@ export const App = () => {
 
   // Render home tab content
   const renderHomeContent = () => {
+    // If viewing a board from a space, show BoardDetailPage
+    if (selectedBoardId && boardViewContext?.spaceId) {
+      return (
+        <BoardDetailPage
+          boardId={selectedBoardId}
+          onBack={handleBackToList}
+          spaceId={boardViewContext.spaceId}
+          ownerId={boardViewContext.ownerId}
+          isReadOnly={boardViewContext.isReadOnly}
+        />
+      )
+    }
+
     if (selectedSpaceId) {
       return (
         <SpaceDetailPage

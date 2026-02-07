@@ -18,6 +18,8 @@ export interface RankListProps {
   onReorder: (fromIndex: number, toIndex: number) => void
   /** Called when a card is tapped */
   onCardTap: (cardId: string) => void
+  /** Whether the list is in read-only mode (disables dragging) */
+  isReadOnly?: boolean
 }
 
 /**
@@ -39,6 +41,42 @@ const EmptyList = () => (
 )
 
 const LONG_PRESS_DURATION = 500 // ms
+
+/**
+ * Static (non-draggable) card for read-only mode
+ */
+const StaticCard = ({
+  card,
+  rank,
+  thumbnailUrl,
+  useNickname,
+  isLoading,
+  onTap,
+}: {
+  card: Card
+  rank: number
+  thumbnailUrl?: string
+  useNickname: boolean
+  isLoading: boolean
+  onTap: (id: string) => void
+}) => {
+  return (
+    <div className="relative">
+      <RankCard
+        id={card.id}
+        name={card.name}
+        nickname={card.nickname}
+        rank={rank}
+        thumbnailUrl={thumbnailUrl}
+        notes={card.notes}
+        isDragging={false}
+        useNickname={useNickname}
+        isLoading={isLoading}
+        onTap={onTap}
+      />
+    </div>
+  )
+}
 
 /**
  * Individual draggable card wrapper with Framer Motion
@@ -222,6 +260,7 @@ export const RankList = ({
   loadingCardIds = new Set(),
   onReorder,
   onCardTap,
+  isReadOnly = false,
 }: RankListProps) => {
   const [orderedCards, setOrderedCards] = useState(cards)
   const [useNickname, setUseNickname] = useState(() => getSettings().nicknameModeRankList)
@@ -287,6 +326,37 @@ export const RankList = ({
 
   // Check if any cards have nicknames to show the toggle
   const hasAnyNicknames = orderedCards.some(card => card.nickname && card.nickname.trim() !== '')
+
+  // Read-only mode: render static list without drag capabilities
+  if (isReadOnly) {
+    return (
+      <div className="flex flex-col">
+        {/* Nickname Toggle - only show if some cards have nicknames */}
+        {hasAnyNicknames && (
+          <div className="flex justify-end px-4 pt-2">
+            <NicknameToggle enabled={useNickname} onToggle={handleToggleNickname} />
+          </div>
+        )}
+
+        <div
+          data-testid="rank-list"
+          className="flex flex-col gap-3 p-4"
+        >
+          {orderedCards.map((card, index) => (
+            <StaticCard
+              key={card.id}
+              card={card}
+              rank={index + 1}
+              thumbnailUrl={thumbnailUrls[card.id]}
+              useNickname={useNickname}
+              isLoading={loadingCardIds.has(card.id)}
+              onTap={onCardTap}
+            />
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col">

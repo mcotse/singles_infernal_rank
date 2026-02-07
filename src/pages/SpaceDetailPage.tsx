@@ -22,7 +22,7 @@ import type { SpaceBoard } from '../lib/spaceTypes'
 interface SpaceDetailPageProps {
   spaceId: string
   onBack: () => void
-  onBoardSelect: (boardId: string) => void
+  onBoardSelect: (boardId: string, spaceContext?: { spaceId: string; ownerId: string }) => void
 }
 
 type TabId = 'my' | 'all'
@@ -220,6 +220,19 @@ export const SpaceDetailPage = ({
     await syncBoard(board, false)
   }
 
+  // Handler that passes space context when clicking a board in the space
+  const handleBoardClick = (boardId: string) => {
+    const board = displayBoards.find((b) => b.id === boardId)
+    if (board) {
+      onBoardSelect(boardId, {
+        spaceId,
+        ownerId: board.ownerId,
+      })
+    } else {
+      onBoardSelect(boardId)
+    }
+  }
+
   const handleLeaveSpace = async () => {
     // Handled by parent via onBack after leaveSpace
     onBack()
@@ -323,7 +336,7 @@ export const SpaceDetailPage = ({
           boards={displayBoards}
           cardCounts={cardCounts}
           coverImageUrls={coverImageUrls}
-          onBoardClick={onBoardSelect}
+          onBoardClick={handleBoardClick}
         />
       ) : (
         <div className="flex flex-col items-center justify-center py-20 px-8 text-center">
